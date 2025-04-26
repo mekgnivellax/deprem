@@ -1,0 +1,434 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
+
+/* CSS Değişkenleri Tanımlaması */
+:root {
+    --background-color: #f0f2f5;
+    --container-bg-color: #ffffff;
+    --text-color: #333;
+    --heading-color: #1a237e;
+    --location-color: #283593;
+    --secondary-text-color: #555;
+    --border-color: #e0e0e0;
+    --magnitude-bg-color: #d32f2f;
+    --magnitude-text-color: #ffffff;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --button-bg: #1a237e;
+    --button-text: #ffffff;
+    --button-hover-bg: #3949ab;
+}
+
+body.dark-theme {
+    --background-color: #121212;
+    --container-bg-color: #1e1e1e;
+    --text-color: #e0e0e0;
+    --heading-color: #9fa8da;
+    --location-color: #7986cb;
+    --secondary-text-color: #bdbdbd;
+    --border-color: #424242;
+    --magnitude-bg-color: #ef5350; /* Koyu temada biraz daha parlak */
+    --magnitude-text-color: #121212;
+    --shadow-color: rgba(255, 255, 255, 0.1);
+    --button-bg: #9fa8da;
+    --button-text: #121212;
+    --button-hover-bg: #c5cae9;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    line-height: 1.6;
+    transition: background-color 0.3s, color 0.3s; /* Yumuşak geçiş */
+}
+
+.container {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px 30px; /* Biraz daha yan boşluk */
+    background-color: var(--container-bg-color);
+    border-radius: 12px; /* Biraz daha yuvarlak */
+    box-shadow: 0 6px 12px var(--shadow-color); /* Biraz daha belirgin gölge */
+    transition: background-color 0.3s;
+    position: relative; /* Buton konumlandırması için */
+}
+
+#theme-toggle {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    border: none;
+    padding: 8px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+#theme-toggle:hover {
+    background-color: var(--button-hover-bg);
+}
+
+h1 {
+    text-align: center;
+    color: var(--heading-color);
+    margin-bottom: 30px;
+    font-weight: 700;
+}
+
+#earthquake-list {
+    background-color: var(--container-bg-color);
+    padding: 0;
+    border-radius: 8px;
+}
+
+.earthquake-item {
+    border-bottom: 1px solid var(--border-color);
+    padding: 15px 5px; /* Yan padding azaltıldı, container'da var */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    transition: background-color 0.2s; /* Hover efekti için */
+}
+
+/* .earthquake-item:hover {
+    background-color: rgba(0, 0, 0, 0.03);  Hover rengini temaya göre ayarlamak zor olabilir
+} */
+
+body.dark-theme .earthquake-item:hover {
+     background-color: rgba(255, 255, 255, 0.05);
+}
+
+.earthquake-item:last-child {
+    border-bottom: none;
+}
+
+.earthquake-item .info {
+    flex-grow: 1;
+    margin-right: 15px;
+}
+
+.earthquake-item span {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.location {
+    font-weight: 700;
+    font-size: 1.1em;
+    color: var(--location-color);
+}
+
+.magnitude-container {
+    text-align: center;
+    min-width: 80px;
+}
+
+.magnitude {
+    display: inline-block;
+    background-color: var(--magnitude-bg-color);
+    color: var(--magnitude-text-color);
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 1.2em;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.date, .depth {
+    color: var(--secondary-text-color);
+    font-size: 0.9em;
+    margin-top: 5px;
+}
+
+.loading-text {
+    text-align: center;
+    padding: 20px;
+    color: var(--secondary-text-color);
+    font-style: italic;
+}
+
+@media (max-width: 600px) {
+    .container {
+        padding: 15px 20px;
+    }
+    #theme-toggle {
+        top: 15px;
+        right: 20px;
+    }
+    .earthquake-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .magnitude-container {
+        margin-top: 10px;
+        align-self: flex-start;
+    }
+}
+
+#map {
+    height: 400px; /* Harita yüksekliği */
+    width: 100%;
+    margin-bottom: 25px; /* Liste ile arasına boşluk */
+    border-radius: 8px;
+    box-shadow: 0 4px 8px var(--shadow-color);
+    z-index: 0; /* Diğer elemanların altında kalmaması için */
+}
+
+.controls-container {
+    display: flex;
+    justify-content: space-around; /* Elemanları yay */
+    align-items: center;
+    flex-wrap: wrap; /* Küçük ekranlar için alt alta */
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: rgba(128, 128, 128, 0.05); /* Çok hafif arka plan */
+    border-radius: 8px;
+}
+
+.filter-container, .sort-container, .source-container, .date-picker-container, .notification-control, .notification-settings {
+    display: flex;
+    align-items: center;
+    margin: 8px 10px; /* Biraz daha dikey boşluk */
+    flex-wrap: wrap; /* Ayarların sığmazsa alta kayması için */
+}
+
+.source-container label {
+    margin-right: 5px;
+    font-weight: 500;
+    color: var(--secondary-text-color);
+    cursor: pointer;
+}
+
+.source-container input[type="radio"] {
+    margin-right: 3px;
+    cursor: pointer;
+}
+
+.filter-container label, .sort-container label {
+    margin-right: 10px;
+    font-weight: 500;
+    color: var(--secondary-text-color);
+}
+
+.sort-container select {
+    padding: 5px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--container-bg-color);
+    color: var(--text-color);
+    margin-left: 5px;
+    cursor: pointer;
+}
+
+.filter-container input[type="range"] {
+    cursor: pointer;
+    width: 200px; /* Ya da istediğin bir genişlik */
+}
+
+#magnitude-value, #distance-value {
+    font-weight: bold;
+    color: var(--text-color);
+    min-width: 30px; /* Değerin oynaması için */
+    display: inline-block;
+    text-align: right;
+}
+
+.chart-container {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: var(--container-bg-color);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.date-picker-container {
+    display: none; /* Başlangıçta gizli */
+    align-items: center;
+    margin: 5px 10px;
+}
+
+body.kandilli-selected .date-picker-container {
+    display: flex; /* Kandilli seçilince göster */
+}
+
+.date-picker-container label {
+    margin-right: 5px;
+    font-weight: 500;
+    color: var(--secondary-text-color);
+}
+
+.date-picker-container input[type="date"] {
+    padding: 4px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--container-bg-color);
+    color: var(--text-color);
+    cursor: pointer;
+}
+
+/* Modal Stilleri */
+.modal {
+    display: none; /* Başlangıçta gizli */
+    position: fixed; /* Sayfada sabit kal */
+    z-index: 1000; /* Diğer her şeyin üstünde */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto; /* İçerik sığmazsa kaydır */
+    background-color: rgba(0,0,0,0.6); /* Yarı saydam arka plan */
+    padding-top: 60px; /* Üstten boşluk */
+}
+
+.modal-content {
+    background-color: var(--container-bg-color);
+    margin: 5% auto;
+    padding: 25px 35px;
+    border: 1px solid var(--border-color);
+    width: 80%; /* Genişlik */
+    max-width: 600px; /* Maksimum genişlik */
+    border-radius: 10px;
+    position: relative;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    animation-name: animatetop;
+    animation-duration: 0.4s;
+}
+
+/* Modal açılma animasyonu */
+@keyframes animatetop {
+    from {top: -300px; opacity: 0}
+    to {top: 0; opacity: 1}
+}
+
+.close-button {
+    color: var(--secondary-text-color);
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: var(--text-color);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.modal-content h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: var(--heading-color);
+}
+
+#modal-body p {
+    margin-bottom: 10px;
+    line-height: 1.5;
+    color: var(--text-color);
+}
+
+#modal-body strong {
+    color: var(--location-color); /* Veya başka bir vurgu rengi */
+    min-width: 100px; /* Başlıkların hizalı durması için */
+    display: inline-block;
+}
+
+/* Yükleniyor Göstergesi */
+#loading {
+    display: none; /* Başlangıçta gizli */
+    text-align: center;
+    padding: 30px 20px;
+    color: var(--secondary-text-color);
+    font-size: 1.1em;
+}
+
+#loading::before { /* Basit bir dönen ikon */
+    content: "";
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+    border: 3px solid rgba(128, 128, 128, 0.3);
+    border-radius: 50%;
+    border-top-color: var(--heading-color);
+    animation: spin 1s ease-in-out infinite;
+    vertical-align: middle;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Hata Mesajı Alanı */
+#error-message {
+    display: none; /* Başlangıçta gizli */
+    color: #D8000C; /* Koyu kırmızı */
+    background-color: #FFD2D2; /* Açık kırmızı arka plan */
+    border: 1px solid #D8000C;
+    padding: 12px 15px;
+    margin: 15px 0;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 500;
+}
+
+body.dark-theme #error-message {
+    color: #ff8a80; /* Koyu temada okunabilir kırmızı */
+    background-color: rgba(255, 138, 128, 0.15);
+    border-color: #ff8a80;
+}
+
+.notification-control button {
+    padding: 6px 12px;
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.notification-control button:hover {
+    background-color: var(--button-hover-bg);
+}
+
+.notification-control button:disabled {
+    background-color: var(--secondary-text-color);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.notification-settings label {
+    margin-right: 10px;
+    font-weight: 500;
+    color: var(--secondary-text-color);
+    cursor: pointer; /* Checkbox ve range labelleri için */
+    display: inline-flex; /* Checkbox ile yazıyı hizala */
+    align-items: center;
+}
+
+.notification-settings input[type="checkbox"] {
+    margin-right: 5px;
+    cursor: pointer;
+}
+
+.notification-settings input[type="range"] {
+    cursor: pointer;
+    width: 150px; /* Diğer filtrelerle benzer */
+    margin-left: 5px;
+}
+
+#notification-magnitude-value {
+    font-weight: bold;
+    color: var(--text-color);
+    min-width: 30px;
+    display: inline-block;
+    text-align: right;
+} 
