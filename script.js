@@ -118,6 +118,13 @@ function toggleTheme() {
 function initializeChart() {
     if (earthquakeChart) earthquakeChart.destroy(); // Varsa eski grafiği yok et
 
+    // CSS değişkenlerinden renkleri al
+    const style = getComputedStyle(document.documentElement);
+    const lineColor = style.getPropertyValue('--chart-line-color').trim() || 'rgba(211, 47, 47, 1)';
+    const bgColor = style.getPropertyValue('--chart-bg-color').trim() || 'rgba(211, 47, 47, 0.2)';
+    const gridColor = style.getPropertyValue('--border-color').trim() || 'rgba(0, 0, 0, 0.1)';
+    const textColor = style.getPropertyValue('--text-color').trim() || '#333';
+
     earthquakeChart = new Chart(chartCanvas, {
         type: 'line', // Çizgi grafik
         data: {
@@ -125,12 +132,15 @@ function initializeChart() {
             datasets: [{
                 label: 'Deprem Büyüklüğü (ML)',
                 data: [], // Büyüklükler
-                borderColor: 'rgba(211, 47, 47, 1)', // Kırmızı tonu
-                backgroundColor: 'rgba(211, 47, 47, 0.2)',
+                borderColor: lineColor, // CSS değişkeninden
+                backgroundColor: bgColor, // CSS değişkeninden
                 borderWidth: 1.5,
                 tension: 0.1, // Hafif eğim
-                pointBackgroundColor: 'rgba(211, 47, 47, 1)',
+                pointBackgroundColor: lineColor, // Ana renk
                 pointRadius: 3,
+                pointBorderColor: lineColor, // Nokta çerçeve rengi
+                pointHoverRadius: 5, // Hover'da büyüme
+                pointHoverBackgroundColor: lineColor
             }]
         },
         options: {
@@ -139,13 +149,27 @@ function initializeChart() {
                     beginAtZero: true,
                     title: {
                         display: true,
-                        text: 'Büyüklük (ML)'
+                        text: 'Büyüklük (ML)',
+                        color: textColor // Eksen başlığı rengi
+                    },
+                    ticks: {
+                         color: textColor // Eksen değerleri rengi
+                    },
+                    grid: {
+                        color: gridColor // Grid çizgileri rengi
                     }
                 },
                 x: {
                      title: {
                         display: true,
-                        text: 'Zaman (En Yeni -> En Eski)'
+                        text: 'Zaman (En Yeni -> En Eski)',
+                        color: textColor // Eksen başlığı rengi
+                    },
+                     ticks: {
+                         color: textColor // Eksen değerleri rengi
+                    },
+                    grid: {
+                        color: gridColor // Grid çizgileri rengi
                     }
                 }
             },
@@ -153,9 +177,17 @@ function initializeChart() {
             maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    display: false // Tek veri seti olduğu için legend'ı gizle
+                    display: false, // Tek veri seti olduğu için legend'ı gizle
+                    labels: {
+                        color: textColor // Legend rengi (gerekirse)
+                    }
                 },
                  tooltip: {
+                    backgroundColor: style.getPropertyValue('--container-bg-color').trim() || '#fff',
+                    titleColor: textColor,
+                    bodyColor: textColor,
+                    borderColor: gridColor,
+                    borderWidth: 1,
                      callbacks: {
                         // Tooltip'te ek bilgi gösterme (opsiyonel)
                         // label: function(context) {
@@ -168,7 +200,7 @@ function initializeChart() {
             }
         }
     });
-     console.log('Grafik başlatıldı.');
+     // console.log('Grafik başlatıldı.');
 }
 
 // Grafik Güncelleme Fonksiyonu
@@ -208,91 +240,79 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (prefersDark) {
         initialTheme = 'dark';
     }
-    applyTheme(initialTheme);
+    applyTheme(initialTheme); // Temayı uygula
 
     themeToggleButton.addEventListener('click', toggleTheme);
 
-    // Haritayı başlat
+    // 1. Önce Harita ve Grafiği Başlat
     initializeMap();
+    initializeChart();
 
-    // Kontrollerin başlangıç değerleri ve dinleyiciler
+    // 2. Kontrolleri Ayarla (Harita/Grafik hazır olduktan sonra)
     sourceRadios.forEach(radio => {
         if (radio.checked) {
             currentDataSource = radio.value;
-            toggleDatePickerVisibility(); // Başlangıçta tarih seçiciyi ayarla
+            toggleDatePickerVisibility();
         }
         radio.addEventListener('change', handleSourceChange);
     });
-
     datePicker.addEventListener('change', handleDateChange);
 
-    currentMinMagnitude = parseFloat(magnitudeFilter.value);
-    magnitudeValueSpan.textContent = currentMinMagnitude.toFixed(1);
-    currentMaxDistance = parseFloat(distanceFilter.value);
-    distanceValueSpan.textContent = currentMaxDistance >= 1000 ? 'Tümü' : `${currentMaxDistance} km`;
-    currentSortBy = sortBySelect.value;
-    currentSortOrder = sortOrderSelect.value;
-
-    // Dinleyicileri Ayarla
+    // Kontroller null olabilir, kontrol ekleyerek event listener ekleyelim
     if (magnitudeFilter) {
         magnitudeFilter.addEventListener('input', handleFilterChange);
+        currentMinMagnitude = parseFloat(magnitudeFilter.value);
+        if (magnitudeValueSpan) magnitudeValueSpan.textContent = currentMinMagnitude.toFixed(1);
     }
     if (distanceFilter) {
         distanceFilter.addEventListener('input', handleDistanceFilterChange);
+        currentMaxDistance = parseFloat(distanceFilter.value);
+        if (distanceValueSpan) distanceValueSpan.textContent = currentMaxDistance >= 1000 ? 'Tümü' : `${currentMaxDistance} km`;
     }
     if (sortBySelect) {
         sortBySelect.addEventListener('change', handleSortChange);
+        currentSortBy = sortBySelect.value;
     }
     if (sortOrderSelect) {
         sortOrderSelect.addEventListener('change', handleSortChange);
+        currentSortOrder = sortOrderSelect.value;
     }
 
-    // Başlangıçta hata ve yükleniyor göstergelerini gizle
-    loadingIndicator.style.display = 'none';
-    errorContainer.style.display = 'none';
-
-    // Bildirim Ayarlarını Yükle
+    // 3. Bildirim Ayarlarını Yükle ve Dinleyicileri Ekle
     loadNotificationSettings();
-
-    // Bildirim Desteğini ve İzin Durumunu Kontrol Et
     checkNotificationSupportAndStatus();
 
-    // Bildirim Olay Dinleyicileri
-    // Buton null olabilir, kontrol ekleyelim
     if (notificationPermissionButton) {
         notificationPermissionButton.addEventListener('click', requestNotificationPermission);
     }
-
-    // Checkbox null olabilir
     if (enableNotificationsCheckbox) {
         enableNotificationsCheckbox.addEventListener('change', (e) => {
-            notificationsEnabled = e.target.checked;
-            // Range input null olabilir
-            if (notificationMagnitudeInput) {
+             notificationsEnabled = e.target.checked;
+             if (notificationMagnitudeInput) {
                  notificationMagnitudeInput.disabled = !notificationsEnabled;
-            }
-            saveNotificationSettings();
-        });
+             }
+             saveNotificationSettings();
+         });
     }
-
-    // Range input null olabilir
     if (notificationMagnitudeInput) {
         notificationMagnitudeInput.addEventListener('input', (e) => {
             minNotificationMagnitude = parseFloat(e.target.value);
-            // Span null olabilir
             if (notificationMagnitudeValueSpan) {
                 notificationMagnitudeValueSpan.textContent = minNotificationMagnitude.toFixed(1);
             }
-        });
-        // 'change' olayını da kontrol edelim
-        notificationMagnitudeInput.addEventListener('change', () => {
-            saveNotificationSettings();
-        });
-    }
+         });
+         notificationMagnitudeInput.addEventListener('change', () => {
+             saveNotificationSettings();
+         });
+     }
 
-    // Grafiği başlat ve ilk veriyi çek
-    initializeChart();
-    fetchEarthquakes();
+    // 4. Arayüz Hazır Olduktan Sonra Konumu Al ve Veri Çek
+    getUserLocation(); // Artık map/chart hazır olmalı
+    fetchEarthquakes(); // Artık map/chart hazır olmalı
+
+    // Yükleniyor/Hata göstergelerini fetchEarthquakes yönetecek
+    // loadingIndicator.style.display = 'none'; // DOMContentLoaded içinde gizlemeye gerek yok
+    // errorContainer.style.display = 'none'; // DOMContentLoaded içinde gizlemeye gerek yok
 });
 
 // Tarih Seçicinin Görünürlüğünü Ayarla
@@ -372,20 +392,29 @@ function filterAndDisplayData() {
     let processedEarthquakes = allEarthquakes.filter(eq => (getMagnitude(eq) || 0) >= currentMinMagnitude);
 
     // 2. Mesafe Filtrele
-    if (userLocation && currentMaxDistance < 1000) {
+    if (userLocation && currentMaxDistance < 1000) { // Mesafe filtresi aktifse
         processedEarthquakes = processedEarthquakes.filter(eq => {
             const coords = getCoordinates(eq);
             if (coords) {
                 const distance = calculateDistance(userLocation.latitude, userLocation.longitude, coords.lat, coords.lon);
-                eq.calculated_distance = distance;
-                return distance <= currentMaxDistance;
+                eq.calculated_distance = distance; // Mesafeyi ata
+                return distance !== null && distance <= currentMaxDistance; // Null değilse ve filtreden geçiyorsa
             } else {
-                eq.calculated_distance = Infinity;
-                return false;
+                eq.calculated_distance = null; // Hesaplama yapılamıyor
+                return false; // Filtreden çıkarma (mesafe bilinmiyor)
             }
         });
-    } else {
-        processedEarthquakes.forEach(eq => eq.calculated_distance = null);
+    } else { // Mesafe filtresi aktif DEĞİLSE veya konum YOKSA
+        // Filtre aktif olmasa bile mesafeyi hesapla ve ekle (gösterim için)
+        processedEarthquakes.forEach(eq => {
+            const coords = getCoordinates(eq);
+            if (userLocation && coords) { // Konum ve koordinat varsa
+                eq.calculated_distance = calculateDistance(userLocation.latitude, userLocation.longitude, coords.lat, coords.lon);
+            } else { // Konum veya koordinat yoksa
+                eq.calculated_distance = null; // Mesafeyi null yap
+            }
+        });
+        // Bu durumda mesafe filtresi uygulanmıyor, sadece bilgi ekleniyor.
     }
 
     // 3. Sırala
@@ -452,10 +481,32 @@ function getEarthquakeId(eq, source) {
     // AFAD (emirkabal): Yok, geçici oluştur
     return eq.earthquake_id ?? `${getTimestamp(eq)}-${source}-${getMagnitude(eq)}`; // Kandilli ID'si varsa onu kullan
 }
+
+// Büyüklüğe göre renk döndüren fonksiyon
+function getMagnitudeColor(magnitude) {
+    // CSS değişkenlerinden renkleri al
+    const style = getComputedStyle(document.documentElement);
+
+    if (!magnitude || isNaN(magnitude)) return style.getPropertyValue('--secondary-text-color').trim() || '#bdbdbd'; // Gri (veri yoksa/geçersizse)
+    if (magnitude >= 5.0) {
+        return style.getPropertyValue('--magnitude-high-bg').trim() || '#dc3545'; // Koyu Kırmızı
+    } else if (magnitude >= 4.0) {
+        return style.getPropertyValue('--magnitude-medium-bg').trim() || '#fd7e14'; // Turuncu
+    } else if (magnitude >= 3.0) {
+        return style.getPropertyValue('--magnitude-low-bg').trim() || '#ffc107'; // Sarı
+    } else {
+        return style.getPropertyValue('--magnitude-default-bg').trim() || '#28a745'; // Açık Yeşil
+    }
+}
 // ----------------------------------------------
 
 // Haversine formülü ile mesafe hesaplama
 function calculateDistance(lat1, lon1, lat2, lon2) {
+    // Koordinatlar geçerli değilse null döndür
+    if (lat1 == null || lon1 == null || lat2 == null || lon2 == null || isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2)) {
+        console.warn("Geçersiz veya eksik koordinatlar:", { lat1, lon1, lat2, lon2 });
+        return null;
+    }
     const R = 6371; // Dünya yarıçapı (km)
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
@@ -464,22 +515,13 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
         Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
         Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const distance = R * c; // Mesafe (km)
-    return distance;
+    const distance = R * c;
+    return distance; // km cinsinden mesafe
 }
 
 // Kullanıcı Konumunu Alma
 function getUserLocation() {
-    return new Promise((resolve, reject) => {
-        if (userLocation) { // Eğer konum zaten alınmışsa tekrar isteme
-            resolve(userLocation);
-            return;
-        }
-        if (!navigator.geolocation) {
-            reject(new Error('Tarayıcınız konum servisini desteklemiyor.'));
-            return;
-        }
-
+    if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 userLocation = {
@@ -488,47 +530,59 @@ function getUserLocation() {
                 };
                 console.log('Kullanıcı konumu alındı:', userLocation);
 
-                // Kullanıcı işaretçisini haritaya ekle (veya güncelle)
+                // Kullanıcı konum işaretçisini haritaya ekle/güncelle
                 if (map) {
-                    if (userMarker) {
-                        userMarker.setLatLng([userLocation.latitude, userLocation.longitude]);
+                     const userIcon = L.icon({
+                        iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png', // Mavi standart ikon
+                        iconSize: [25, 41],
+                        iconAnchor: [12, 41],
+                        popupAnchor: [1, -34],
+                        shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+                        shadowSize: [41, 41]
+                    });
+
+                    if (!userMarker) {
+                        userMarker = L.marker([userLocation.latitude, userLocation.longitude], { icon: userIcon })
+                                      .addTo(map)
+                                      .bindPopup('<b>Konumunuz</b>')
+                                      .openPopup(); // Popup'ı hemen aç
                     } else {
-                        userMarker = L.marker([userLocation.latitude, userLocation.longitude], {
-                            // Özel ikon kullanabiliriz, şimdilik varsayılan
-                            // icon: L.icon({ iconUrl: 'path/to/user-icon.png', ... })
-                        })
-                        .bindPopup('Sizin Konumunuz')
-                        .addTo(map);
+                        userMarker.setLatLng([userLocation.latitude, userLocation.longitude]);
+                         userMarker.getPopup().setContent('<b>Konumunuz</b>'); // Popup içeriğini güncelle (gerekirse)
                     }
-                    // İlk konum alındığında haritayı kullanıcıya ortala (isteğe bağlı)
-                    // map.setView([userLocation.latitude, userLocation.longitude], 10);
+                   // map.setView([userLocation.latitude, userLocation.longitude], 7); // Konuma odaklan (isteğe bağlı)
                 }
-                resolve(userLocation);
+
+                // Konum alındıktan sonra filtrelemeyi ve gösterimi yeniden yap
+                 filterAndDisplayData();
+
             },
             (error) => {
-                let errorMessage = 'Konum alınamadı.';
-                switch(error.code) {
-                    case error.PERMISSION_DENIED:
-                        errorMessage = "Konum izni verilmedi.";
-                        break;
-                    case error.POSITION_UNAVAILABLE:
-                        errorMessage = "Konum bilgisi mevcut değil.";
-                        break;
-                    case error.TIMEOUT:
-                        errorMessage = "Konum alma isteği zaman aşımına uğradı.";
-                        break;
-                    case error.UNKNOWN_ERROR:
-                        errorMessage = "Bilinmeyen bir hata oluştu.";
-                        break;
+                console.error('Konum alınamadı:', error.message); // Hata mesajını logla
+                userLocation = null; // Hata durumunda null yap
+                if (error.code === error.PERMISSION_DENIED) {
+                    console.warn("Kullanıcı konum iznini reddetti.");
+                    // Kullanıcıya bilgi verilebilir (örn. bir mesaj gösterme)
+                } else if (error.code === error.POSITION_UNAVAILABLE) {
+                     console.warn("Konum bilgisi mevcut değil.");
+                } else if (error.code === error.TIMEOUT) {
+                     console.warn("Konum alma isteği zaman aşımına uğradı.");
                 }
-                console.error('Konum hatası:', errorMessage);
-                // Hata durumunda bile devam etmesi için null resolve edilebilir veya reject kullanılabilir.
-                // Şimdilik null ile devam edelim, mesafe gösterilmez.
-                resolve(null);
-                // reject(new Error(errorMessage)); // Hata fırlatmak istenirse
+                 // Konum alınamasa bile listeyi/haritayı mevcut depremlerle güncelle
+                 filterAndDisplayData();
+            },
+            {
+                enableHighAccuracy: true, // Daha hassas konum için true dene (pil tüketimi artabilir)
+                timeout: 15000, // Timeout süresini biraz artır (15 saniye)
+                maximumAge: 300000 // 5 dakika boyunca önbellekteki konumu kullan
             }
         );
-    });
+    } else {
+        console.warn('Tarayıcı konum servisini desteklemiyor.');
+        userLocation = null;
+         // Konum desteklenmese bile listeyi/haritayı mevcut depremlerle güncelle
+         filterAndDisplayData();
+    }
 }
 
 async function fetchEarthquakes() {
@@ -660,94 +714,121 @@ async function fetchEarthquakes() {
     }
 }
 
+// Deprem Verilerini Gösterme Fonksiyonu
 function displayEarthquakes(earthquakes) {
-    earthquakeList.innerHTML = '';
-    earthquakeList.classList.remove('loading-text');
+    if (!earthquakeList) return;
+    earthquakeList.innerHTML = ''; // Mevcut listeyi temizle
 
-    earthquakes.forEach((eq, index) => { // index'i de alalım (ID için)
-        const item = document.createElement('div');
-        item.classList.add('earthquake-item');
-
-        // ID ve koordinatları ekle
-        item.dataset.id = eq.internal_id; // Oluşturulan internal_id'yi kullan
-        const coords = getCoordinates(eq);
-        if (coords) {
-            item.dataset.lat = coords.lat;
-            item.dataset.lon = coords.lon;
-            item.style.cursor = 'pointer';
-            item.addEventListener('click', handleListItemClick);
-        }
-
-        // Bilgi Bölümü
-        const infoDiv = document.createElement('div');
-        infoDiv.classList.add('info');
-
-        const location = document.createElement('span');
-        location.classList.add('location');
-        location.textContent = getLocationTitle(eq);
-
-        const depth = document.createElement('span');
-        depth.classList.add('depth');
-        depth.textContent = `Derinlik: ${getDepth(eq)} km`;
-
-        // Mesafe Bilgisi (Artık filtrelemede hesaplanıyor, varsa göster)
-        const distanceSpan = document.createElement('span');
-        distanceSpan.classList.add('distance');
-        if (eq.calculated_distance !== null && eq.calculated_distance !== Infinity) {
-            distanceSpan.textContent = `Mesafe: ~${Math.round(eq.calculated_distance)} km`;
-            distanceSpan.style.fontWeight = 'bold';
-        }
-
-        infoDiv.appendChild(location);
-        infoDiv.appendChild(depth);
-        if (distanceSpan.textContent) {
-            infoDiv.appendChild(distanceSpan);
-        }
-
-        const date = document.createElement('span');
-        date.classList.add('date');
-        date.textContent = `Tarih: ${getDateString(eq)}`;
-
-        infoDiv.appendChild(date);
-
-        // Büyüklük Bölümü
-        const magnitudeDiv = document.createElement('div');
-        magnitudeDiv.classList.add('magnitude-container');
-
-        const magnitude = document.createElement('span');
-        magnitude.classList.add('magnitude');
-        const magValue = getMagnitude(eq) || 0;
-        magnitude.textContent = magValue > 0 ? magValue.toFixed(1) : '-';
-
-        magnitudeDiv.appendChild(magnitude);
-
-        item.appendChild(infoDiv);
-        item.appendChild(magnitudeDiv);
-
-        earthquakeList.appendChild(item);
-    });
+    // Yükleniyor göstergesini gizle (veri varsa veya yoksa)
+    if (loadingIndicator) loadingIndicator.style.display = 'none';
 
     if (earthquakes.length === 0) {
-        earthquakeList.innerHTML = '<div class="loading-text">Filtreye veya sıralamaya uygun deprem bulunamadı.</div>';
-        earthquakeList.classList.add('loading-text');
+        earthquakeList.innerHTML = '<li>Gösterilecek deprem bulunamadı. Filtreleri veya tarih seçimini kontrol edin.</li>';
+        updateMapMarkers([]); // Haritayı da temizle
+        updateChart([]); // Grafiği de temizle
+        return;
     }
-}
 
-// Liste Öğesi Tıklama İşleyicisi
-function handleListItemClick(event) {
-    const listItem = event.target.closest('.earthquake-item');
-    if (!listItem || !map) return;
+    earthquakes.forEach((earthquake, index) => {
+        const listItem = document.createElement('li');
+        listItem.classList.add('earthquake-item');
+        // listItem ID'sini setAttribute ile eklemek daha güvenli olabilir
+        listItem.setAttribute('data-id', getEarthquakeId(earthquake, currentDataSource));
 
-    const lat = listItem.dataset.lat;
-    const lon = listItem.dataset.lon;
-    const eqId = listItem.dataset.id; // Geçici ID'yi kullan
+        const magnitude = getMagnitude(earthquake);
+        const depth = getDepth(earthquake);
+        const dateStr = getDateString(earthquake);
+        const locationTitle = getLocationTitle(earthquake);
+        const coords = getCoordinates(earthquake);
 
-    if (lat && lon) {
-        map.setView([parseFloat(lat), parseFloat(lon)], 10);
-        if (eqId && earthquakeMarkers[eqId]) {
-            earthquakeMarkers[eqId].openPopup();
+        // Büyüklüğe göre renk sınıfı
+        if (magnitude >= 5.0) listItem.classList.add('magnitude-high');
+        else if (magnitude >= 4.0) listItem.classList.add('magnitude-medium');
+        else if (magnitude >= 3.0) listItem.classList.add('magnitude-low');
+
+        // Mesafe metnini oluştur
+        let distanceInfoHtml = '';
+        let distanceKm = earthquake.calculated_distance; // filterAndDisplayData'dan gelen hesaplanmış mesafe
+
+         // Eğer mesafe hesaplanmamışsa (örn. konum izni yoksa) ve koordinat varsa, tekrar hesapla
+         if (distanceKm === undefined && userLocation && coords) {
+             distanceKm = calculateDistance(userLocation.latitude, userLocation.longitude, coords.lat, coords.lon);
+         }
+
+        // Mesafe varsa HTML'i oluştur
+        if (distanceKm !== null && distanceKm !== undefined && !isNaN(distanceKm) && distanceKm !== Infinity) {
+            distanceInfoHtml = `
+                <span class="distance-info">
+                    <i class="fas fa-road"></i> Uzaklık: ${distanceKm.toFixed(1)} km
+                </span>`;
         }
-    }
+
+        // Liste öğesi içeriği
+        listItem.innerHTML = `
+            <div class="magnitude" style="background-color: ${getMagnitudeColor(magnitude)};">
+                ${magnitude && !isNaN(magnitude) ? magnitude.toFixed(1) : 'N/A'}
+            </div>
+            <div class="details">
+                <span class="location">${locationTitle || 'Bilinmeyen Konum'}</span>
+                <span class="date-depth">
+                    <i class="far fa-calendar-alt"></i> ${dateStr || 'Bilinmeyen Zaman'} |
+                    <i class="fas fa-arrows-alt-v"></i> Derinlik: ${depth !== null && !isNaN(depth) ? depth.toFixed(1) + ' km' : 'N/A'}
+                </span>
+                ${distanceInfoHtml}  <!-- Yeni mesafe bilgisi span'ı buraya eklendi -->
+            </div>
+             <div class="map-icon-container">
+                <i class="fas fa-map-marker-alt map-icon" title="Haritada göster"></i>
+             </div>
+        `;
+
+        // Tıklama olayı
+        listItem.addEventListener('click', (e) => {
+            const currentItem = e.currentTarget; // Tıklanan li öğesini al
+             // Eğer harita ikonuna tıklandıysa modal açma, haritaya odaklan
+            if (e.target.classList.contains('map-icon')) {
+                 const eqId = currentItem.getAttribute('data-id');
+                if (map && earthquakeMarkers[eqId]) {
+                     const markerLatLng = earthquakeMarkers[eqId].getLatLng();
+                     // Cluster içindeyse cluster'ı açmayı dene
+                     const parent = earthquakeLayerGroup.getVisibleParent(earthquakeMarkers[eqId]);
+                     if(parent && typeof parent.spiderfy === 'function') { // spiderfy metodu var mı kontrol et
+                          parent.spiderfy(); // Veya zoomToShowLayer(marker)
+                     }
+                     map.setView(markerLatLng, Math.max(map.getZoom(), 11)); // Biraz daha yakınlaş
+                    earthquakeMarkers[eqId].openPopup();
+                } else if(coords) {
+                     // İşaretçi henüz oluşturulmamışsa veya bulunamadıysa koordinata git
+                     map.setView([coords.lat, coords.lon], 11);
+                     console.warn("Harita ikonu tıklandı ancak işaretçi bulunamadı, koordinata gidiliyor.", eqId);
+                }
+            } else {
+                 // Liste öğesinin geri kalanına tıklandıysa modal aç
+                  if (typeof openModal === 'function') {
+                         const eqId = currentItem.getAttribute('data-id');
+                        // allEarthquakes içinden doğru depremi bulmamız gerekiyor
+                         const originalEarthquakeData = allEarthquakes.find(eq => getEarthquakeId(eq, currentDataSource) === eqId);
+                        if(originalEarthquakeData) {
+                             openModal(originalEarthquakeData);
+                        } else {
+                             console.warn("Modal için orijinal deprem verisi bulunamadı:", eqId);
+                             // Belki liste öğesindeki verilerle basit bir modal gösterilebilir?
+                             // openModal({ location: locationTitle, magnitude: magnitude, ... });
+                        }
+
+                  } else {
+                      console.warn("openModal fonksiyonu tanımlı değil.");
+                  }
+            }
+        });
+
+        earthquakeList.appendChild(listItem);
+    });
+
+    // Harita ve Grafik Güncelleme
+    updateMapMarkers(earthquakes);
+    updateChart(earthquakes); // Grafiği güncelle
+
+    // console.log(`${earthquakes.length} deprem listelendi ve harita/grafik güncellendi.`);
 }
 
 // Harita İşaretçilerini Güncelleme Fonksiyonu

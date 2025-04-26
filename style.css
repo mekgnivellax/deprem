@@ -2,35 +2,49 @@
 
 /* CSS Değişkenleri Tanımlaması */
 :root {
-    --background-color: #f0f2f5;
+    --background-color: #f4f6f8; /* Biraz daha açık gri */
     --container-bg-color: #ffffff;
-    --text-color: #333;
-    --heading-color: #1a237e;
-    --location-color: #283593;
-    --secondary-text-color: #555;
-    --border-color: #e0e0e0;
-    --magnitude-bg-color: #d32f2f;
+    --text-color: #212529; /* Daha koyu siyah */
+    --heading-color: #343a40; /* Başlık için daha koyu */
+    --location-color: #0056b3; /* Konum için mavi tonu */
+    --secondary-text-color: #6c757d; /* İkincil metin için gri */
+    --border-color: #dee2e6; /* Daha açık çerçeve rengi */
+    --magnitude-high-bg: #dc3545; /* 5+ için Kırmızı */
+    --magnitude-medium-bg: #fd7e14; /* 4+ için Turuncu */
+    --magnitude-low-bg: #ffc107;  /* 3+ için Sarı */
+    --magnitude-default-bg: #28a745; /* Diğerleri için Yeşil */
     --magnitude-text-color: #ffffff;
-    --shadow-color: rgba(0, 0, 0, 0.1);
-    --button-bg: #1a237e;
+    --shadow-color: rgba(0, 0, 0, 0.075); /* Daha hafif gölge */
+    --button-bg: #007bff; /* Ana buton rengi (mavi) */
     --button-text: #ffffff;
-    --button-hover-bg: #3949ab;
+    --button-hover-bg: #0056b3; /* Buton hover */
+    --link-color: #007bff; /* Genel link rengi */
+    --code-bg: #e9ecef; /* Kod/pre arka planı (varsa) */
+    --chart-line-color: #dc3545; /* Grafik çizgisi */
+    --chart-bg-color: rgba(220, 53, 69, 0.1); /* Grafik dolgu */
 }
 
 body.dark-theme {
-    --background-color: #121212;
-    --container-bg-color: #1e1e1e;
-    --text-color: #e0e0e0;
-    --heading-color: #9fa8da;
-    --location-color: #7986cb;
-    --secondary-text-color: #bdbdbd;
-    --border-color: #424242;
-    --magnitude-bg-color: #ef5350; /* Koyu temada biraz daha parlak */
-    --magnitude-text-color: #121212;
-    --shadow-color: rgba(255, 255, 255, 0.1);
-    --button-bg: #9fa8da;
-    --button-text: #121212;
-    --button-hover-bg: #c5cae9;
+    --background-color: #1a1a1a; /* Daha koyu arka plan */
+    --container-bg-color: #2c2c2c; /* Konteyner için biraz daha açık */
+    --text-color: #e9ecef; /* Açık gri metin */
+    --heading-color: #adb5bd; /* Başlık */
+    --location-color: #6ea8fe; /* Konum (açık mavi) */
+    --secondary-text-color: #adb5bd; /* İkincil metin */
+    --border-color: #495057; /* Koyu çerçeve */
+    --magnitude-high-bg: #f16270; /* Koyu tema için Kırmızı */
+    --magnitude-medium-bg: #ffa94d; /* Koyu tema için Turuncu */
+    --magnitude-low-bg: #ffd43b;  /* Koyu tema için Sarı */
+    --magnitude-default-bg: #51cf66; /* Koyu tema için Yeşil */
+    --magnitude-text-color: #1a1a1a; /* Büyüklük yazısı (koyu) */
+    --shadow-color: rgba(255, 255, 255, 0.05); /* Beyazımsı gölge */
+    --button-bg: #6ea8fe; /* Açık mavi buton */
+    --button-text: #1a1a1a; /* Koyu buton yazısı */
+    --button-hover-bg: #a1c9ff; /* Buton hover */
+    --link-color: #6ea8fe;
+    --code-bg: #343a40;
+    --chart-line-color: #f16270;
+    --chart-bg-color: rgba(241, 98, 112, 0.2);
 }
 
 body {
@@ -40,7 +54,12 @@ body {
     background-color: var(--background-color);
     color: var(--text-color);
     line-height: 1.6;
-    transition: background-color 0.3s, color 0.3s; /* Yumuşak geçiş */
+    /* transition: background-color 0.3s, color 0.3s; */ /* Aşağıda daha genel tanımlandı */
+}
+
+/* Genel Geçişler */
+body, .container, button, a, input, select, .earthquake-item, .magnitude {
+    transition: background-color 0.25s ease-in-out, color 0.25s ease-in-out, border-color 0.25s ease-in-out, box-shadow 0.25s ease-in-out;
 }
 
 .container {
@@ -80,94 +99,115 @@ h1 {
 }
 
 #earthquake-list {
-    background-color: var(--container-bg-color);
     padding: 0;
-    border-radius: 8px;
+    margin-top: 25px;
+    list-style: none;
 }
 
 .earthquake-item {
-    border-bottom: 1px solid var(--border-color);
-    padding: 15px 5px; /* Yan padding azaltıldı, container'da var */
+    background-color: var(--container-bg-color);
+    padding: 15px 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
-    transition: background-color 0.2s; /* Hover efekti için */
+    transition: background-color 0.2s, box-shadow 0.2s;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 5px var(--shadow-color);
+    cursor: pointer;
 }
 
-/* .earthquake-item:hover {
-    background-color: rgba(0, 0, 0, 0.03);  Hover rengini temaya göre ayarlamak zor olabilir
-} */
+.earthquake-item:hover {
+    box-shadow: 0 4px 10px var(--shadow-color);
+    background-color: color-mix(in srgb, var(--container-bg-color) 95%, var(--text-color) 5%);
+}
 
 body.dark-theme .earthquake-item:hover {
-     background-color: rgba(255, 255, 255, 0.05);
+    background-color: color-mix(in srgb, var(--container-bg-color) 90%, var(--text-color) 10%);
 }
 
-.earthquake-item:last-child {
-    border-bottom: none;
-}
-
-.earthquake-item .info {
+.earthquake-item .details {
     flex-grow: 1;
-    margin-right: 15px;
+    margin-left: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
-.earthquake-item span {
+.earthquake-item .details span {
     display: block;
-    margin-bottom: 4px;
+    margin-bottom: 5px;
+}
+
+.earthquake-item .details span:last-child {
+    margin-bottom: 0;
 }
 
 .location {
     font-weight: 700;
     font-size: 1.1em;
     color: var(--location-color);
-}
-
-.magnitude-container {
-    text-align: center;
-    min-width: 80px;
+    margin-bottom: 8px !important;
 }
 
 .magnitude {
-    display: inline-block;
-    background-color: var(--magnitude-bg-color);
+    /* background-color: var(--magnitude-bg-color); */ /* Kaldırıldı, JS'den gelecek */
     color: var(--magnitude-text-color);
-    padding: 8px 12px;
-    border-radius: 20px;
+    display: flex; /* İçeriği ortalamak için */
+    justify-content: center;
+    align-items: center;
+    min-width: 60px; /* Minimum genişlik */
+    height: 60px; /* Yükseklik */
+    padding: 5px; /* İç boşluk */
+    border-radius: 50%; /* Tam yuvarlak */
     font-weight: bold;
-    font-size: 1.2em;
+    font-size: 1.3em; /* Biraz daha büyük */
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    transition: background-color 0.3s, color 0.3s;
+    flex-shrink: 0; /* Küçülmesin */
 }
 
-.date, .depth {
+.date-depth, .distance-info {
     color: var(--secondary-text-color);
     font-size: 0.9em;
-    margin-top: 5px;
+    display: flex;
+    align-items: center;
 }
 
-.loading-text {
-    text-align: center;
-    padding: 20px;
+.date-depth i, .distance-info i {
+    margin-right: 6px;
+    font-size: 1em;
     color: var(--secondary-text-color);
-    font-style: italic;
+    width: 16px;
+    text-align: center;
 }
 
 @media (max-width: 600px) {
     .container {
-        padding: 15px 20px;
+        padding: 15px;
     }
     #theme-toggle {
-        top: 15px;
-        right: 20px;
+        top: 10px;
+        right: 15px;
+        padding: 6px 10px;
     }
     .earthquake-item {
-        flex-direction: column;
-        align-items: flex-start;
+        flex-direction: row;
+        align-items: center;
+        padding: 12px 15px;
     }
-    .magnitude-container {
-        margin-top: 10px;
-        align-self: flex-start;
+    .earthquake-item .details {
+        margin-left: 15px;
+    }
+    .magnitude {
+        min-width: 50px;
+        height: 50px;
+        font-size: 1.2em; /* Mobilde biraz daha büyük olabilir */
+    }
+    .location {
+        font-size: 1em;
+    }
+    .date-depth, .distance-info {
+        font-size: 0.85em;
     }
 }
 
@@ -181,95 +221,183 @@ body.dark-theme .earthquake-item:hover {
 }
 
 .controls-container {
-    display: flex;
-    justify-content: space-around; /* Elemanları yay */
-    align-items: center;
-    flex-wrap: wrap; /* Küçük ekranlar için alt alta */
-    margin-bottom: 20px;
-    padding: 10px;
-    background-color: rgba(128, 128, 128, 0.05); /* Çok hafif arka plan */
+    display: grid; /* Grid layout kullanalım */
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Otomatik sığdırma */
+    gap: 20px; /* Öğeler arası boşluk */
+    align-items: start; /* Öğeleri yukarı hizala */
+    margin-bottom: 30px; /* Alt boşluğu artır */
+    padding: 15px;
+    background-color: color-mix(in srgb, var(--container-bg-color) 90%, var(--text-color) 5%); /* Hafif farklı arka plan */
+    border: 1px solid var(--border-color); /* İnce çerçeve */
     border-radius: 8px;
 }
 
+body.dark-theme .controls-container {
+    background-color: color-mix(in srgb, var(--container-bg-color) 95%, var(--text-color) 3%);
+}
+
+/* Her bir kontrol grubunu sarmak için (HTML'de eklemek gerekebilir veya mevcutları kullanabiliriz) */
+.control-group {
+    display: flex;
+    flex-direction: column; /* Grup içindekiler alt alta */
+    gap: 10px; /* Grup içi boşluk */
+}
+
+/* Mevcut containerları grup gibi kullanalım ve stillerini ayarlayalım */
 .filter-container, .sort-container, .source-container, .date-picker-container, .notification-control, .notification-settings {
     display: flex;
+    flex-direction: column; /* Etiket ve input alt alta */
+    align-items: stretch; /* Genişliği eşitle */
+    margin: 0; /* Controls-container'dan gelen gap yeterli */
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--container-bg-color); /* Grubun kendi arka planı */
+}
+
+/* Etiketler için genel stil */
+.controls-container label:not(.source-container label):not(.notification-settings label) {
+    font-weight: 500;
+    color: var(--secondary-text-color);
+    margin-bottom: 5px; /* Input ile arasına boşluk */
+    display: block; /* Tam genişlik */
+}
+
+/* Kaynak ve Bildirim checkbox etiketleri yan yana kalsın */
+.source-container, .notification-settings {
+    flex-direction: row; /* Bunlar yan yana */
+    flex-wrap: wrap;
     align-items: center;
-    margin: 8px 10px; /* Biraz daha dikey boşluk */
-    flex-wrap: wrap; /* Ayarların sığmazsa alta kayması için */
+    justify-content: flex-start; /* Sola yasla */
+    padding: 10px 5px; /* Daha az padding */
 }
 
-.source-container label {
+.source-container label,
+.notification-settings label {
+    margin-right: 15px; /* Seçenekler arası boşluk */
+    margin-bottom: 5px; /* Alt alta kayarsa */
+    font-weight: normal; /* Normal kalınlık */
+    cursor: pointer;
+    display: inline-flex; /* İkon/checkbox ile hizala */
+    align-items: center;
+}
+
+.source-container input[type="radio"],
+.notification-settings input[type="checkbox"] {
     margin-right: 5px;
-    font-weight: 500;
-    color: var(--secondary-text-color);
     cursor: pointer;
 }
 
-.source-container input[type="radio"] {
-    margin-right: 3px;
-    cursor: pointer;
+/* Range input ve span'ları yan yana getirelim */
+.filter-container div,
+.notification-settings div {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Input ve span arası boşluk */
 }
 
-.filter-container label, .sort-container label {
-    margin-right: 10px;
-    font-weight: 500;
-    color: var(--secondary-text-color);
+.filter-container input[type="range"],
+.notification-settings input[type="range"] {
+    cursor: pointer;
+    flex-grow: 1; /* Esnek genişlik */
+}
+
+#magnitude-value, #distance-value,
+#notification-magnitude-value {
+    font-weight: bold;
+    color: var(--text-color);
+    min-width: 45px; /* Biraz daha geniş yer */
+    text-align: right;
+    background-color: color-mix(in srgb, var(--container-bg-color) 85%, var(--text-color) 5%);
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+body.dark-theme #magnitude-value,
+body.dark-theme #distance-value,
+body.dark-theme #notification-magnitude-value {
+    background-color: color-mix(in srgb, var(--container-bg-color) 90%, var(--text-color) 8%);
+}
+
+/* Sıralama select'leri yan yana */
+.sort-container div {
+    display: flex;
+    gap: 10px;
 }
 
 .sort-container select {
-    padding: 5px 8px;
+    padding: 8px 10px; /* Biraz daha büyük */
     border: 1px solid var(--border-color);
     border-radius: 4px;
     background-color: var(--container-bg-color);
     color: var(--text-color);
-    margin-left: 5px;
     cursor: pointer;
+    flex-grow: 1; /* Eşit genişlesinler */
 }
 
-.filter-container input[type="range"] {
+/* Bildirim butonu */
+.notification-control {
+    padding: 0; /* Padding'i kaldır */
+    border: none; /* Çerçeveyi kaldır */
+    background: none; /* Arka planı kaldır */
+}
+
+.notification-control button {
+    width: 100%; /* Tam genişlik */
+    padding: 10px 15px; /* İç boşluk */
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    border: none;
+    border-radius: 6px;
     cursor: pointer;
-    width: 200px; /* Ya da istediğin bir genişlik */
-}
-
-#magnitude-value, #distance-value {
-    font-weight: bold;
-    color: var(--text-color);
-    min-width: 30px; /* Değerin oynaması için */
-    display: inline-block;
-    text-align: right;
-}
-
-.chart-container {
-    margin-top: 30px;
-    padding: 20px;
-    background-color: var(--container-bg-color);
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-}
-
-.date-picker-container {
-    display: none; /* Başlangıçta gizli */
-    align-items: center;
-    margin: 5px 10px;
-}
-
-body.kandilli-selected .date-picker-container {
-    display: flex; /* Kandilli seçilince göster */
-}
-
-.date-picker-container label {
-    margin-right: 5px;
+    font-size: 0.95em;
     font-weight: 500;
-    color: var(--secondary-text-color);
+    text-align: center;
+    transition: background-color 0.3s, color 0.3s;
 }
 
+.notification-control button:hover:not(:disabled) {
+    background-color: var(--button-hover-bg);
+}
+
+.notification-control button:disabled {
+    background-color: var(--secondary-text-color);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Tarih Seçici */
 .date-picker-container input[type="date"] {
-    padding: 4px 8px;
+    padding: 8px 10px;
     border: 1px solid var(--border-color);
     border-radius: 4px;
     background-color: var(--container-bg-color);
     color: var(--text-color);
-    cursor: pointer;
+    width: 100%; /* Tam genişlik */
+    box-sizing: border-box; /* Padding dahil */
+}
+
+@media (max-width: 768px) { /* Orta boy ekranlar için */
+    .controls-container {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+    }
+}
+
+@media (max-width: 600px) {
+    /* Mobilde kontroller tek sütun olsun */
+    .controls-container {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        padding: 10px;
+    }
+    .filter-container, .sort-container, .source-container, .date-picker-container, .notification-control, .notification-settings {
+        padding: 8px;
+    }
+    .sort-container div {
+        flex-direction: column; /* Selectleri alt alta */
+    }
 }
 
 /* Modal Stilleri */
@@ -383,26 +511,6 @@ body.dark-theme #error-message {
     color: #ff8a80; /* Koyu temada okunabilir kırmızı */
     background-color: rgba(255, 138, 128, 0.15);
     border-color: #ff8a80;
-}
-
-.notification-control button {
-    padding: 6px 12px;
-    background-color: var(--button-bg);
-    color: var(--button-text);
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-.notification-control button:hover {
-    background-color: var(--button-hover-bg);
-}
-
-.notification-control button:disabled {
-    background-color: var(--secondary-text-color);
-    cursor: not-allowed;
-    opacity: 0.7;
 }
 
 .notification-settings label {
