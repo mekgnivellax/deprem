@@ -59,8 +59,11 @@
             <!-- Bildirim Ayarları -->
             <div class="notification-settings">
                  <label><input type="checkbox" id="enable-notifications" checked> Bildirimleri Etkinleştir</label>
-                 <label for="notification-magnitude">Min Bildirim Büyüklüğü: <span id="notification-magnitude-value">4.0</span></label>
-                 <input type="range" id="notification-magnitude" min="3.0" max="8.0" step="0.1" value="4.0">
+                 <div> <!-- Range ve span'ı sarmalayan div (CSS ile hizalama için) -->
+                    <label for="notification-magnitude">Min Bildirim Büyüklüğü: </label>
+                    <input type="range" id="notification-magnitude" min="1.0" max="8.0" step="0.1" value="4.0">
+                    <span id="notification-magnitude-value">4.0</span>
+                </div>
             </div>
         </div>
 
@@ -75,12 +78,16 @@
             <!-- Hata mesajı buraya gelecek -->
         </div>
 
-        <!-- Harita Alanı -->
-        <div id="map"></div>
+        <!-- Ana İçerik Alanı (Harita + Liste) -->
+        <div class="main-content">
+            <!-- Harita Alanı -->
+            <div id="map"></div>
 
-        <div id="earthquake-list" class="loading-text">
-            Yükleniyor...
-        </div>
+            <!-- Deprem Listesi Alanı -->
+            <div id="earthquake-list" class="loading-text">
+                Yükleniyor...
+            </div>
+        </div> <!-- .main-content sonu -->
 
         <!-- Grafik Alanı -->
         <div class="chart-container">

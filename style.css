@@ -1,74 +1,81 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+/* @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap'); */ /* Roboto yerine Inter */
 
 /* CSS Değişkenleri Tanımlaması */
 :root {
-    --background-color: #f4f6f8; /* Biraz daha açık gri */
+    --background-color: #f8f9fa; /* Çok hafif gri */
     --container-bg-color: #ffffff;
-    --text-color: #212529; /* Daha koyu siyah */
-    --heading-color: #343a40; /* Başlık için daha koyu */
-    --location-color: #0056b3; /* Konum için mavi tonu */
-    --secondary-text-color: #6c757d; /* İkincil metin için gri */
-    --border-color: #dee2e6; /* Daha açık çerçeve rengi */
-    --magnitude-high-bg: #dc3545; /* 5+ için Kırmızı */
-    --magnitude-medium-bg: #fd7e14; /* 4+ için Turuncu */
-    --magnitude-low-bg: #ffc107;  /* 3+ için Sarı */
-    --magnitude-default-bg: #28a745; /* Diğerleri için Yeşil */
+    --text-color: #212529;
+    --heading-color: #343a40;
+    --location-color: #0d6efd; /* Bootstrap mavisi */
+    --secondary-text-color: #6c757d;
+    --border-color: #e9ecef; /* Daha da açık çerçeve */
+    --magnitude-high-bg: #dc3545;
+    --magnitude-medium-bg: #fd7e14;
+    --magnitude-low-bg: #ffc107;
+    --magnitude-default-bg: #198754; /* Bootstrap yeşili */
     --magnitude-text-color: #ffffff;
-    --shadow-color: rgba(0, 0, 0, 0.075); /* Daha hafif gölge */
-    --button-bg: #007bff; /* Ana buton rengi (mavi) */
+    --shadow-color: rgba(0, 0, 0, 0.05); /* Daha da hafif gölge */
+    --button-bg: #0d6efd;
     --button-text: #ffffff;
-    --button-hover-bg: #0056b3; /* Buton hover */
-    --link-color: #007bff; /* Genel link rengi */
-    --code-bg: #e9ecef; /* Kod/pre arka planı (varsa) */
-    --chart-line-color: #dc3545; /* Grafik çizgisi */
-    --chart-bg-color: rgba(220, 53, 69, 0.1); /* Grafik dolgu */
+    --button-hover-bg: #0b5ed7;
+    --link-color: #0d6efd;
+    --code-bg: #f1f3f5;
+    --chart-line-color: #dc3545;
+    --chart-bg-color: rgba(220, 53, 69, 0.08);
+    --chart-grid-color: rgba(0, 0, 0, 0.05); /* Açık tema için çok hafif grid */
+    --border-radius-base: 0.375rem; /* 6px */
+    --border-radius-lg: 0.5rem; /* 8px */
 }
 
 body.dark-theme {
-    --background-color: #1a1a1a; /* Daha koyu arka plan */
-    --container-bg-color: #2c2c2c; /* Konteyner için biraz daha açık */
-    --text-color: #e9ecef; /* Açık gri metin */
-    --heading-color: #adb5bd; /* Başlık */
-    --location-color: #6ea8fe; /* Konum (açık mavi) */
-    --secondary-text-color: #adb5bd; /* İkincil metin */
-    --border-color: #495057; /* Koyu çerçeve */
-    --magnitude-high-bg: #f16270; /* Koyu tema için Kırmızı */
-    --magnitude-medium-bg: #ffa94d; /* Koyu tema için Turuncu */
-    --magnitude-low-bg: #ffd43b;  /* Koyu tema için Sarı */
-    --magnitude-default-bg: #51cf66; /* Koyu tema için Yeşil */
-    --magnitude-text-color: #1a1a1a; /* Büyüklük yazısı (koyu) */
-    --shadow-color: rgba(255, 255, 255, 0.05); /* Beyazımsı gölge */
-    --button-bg: #6ea8fe; /* Açık mavi buton */
-    --button-text: #1a1a1a; /* Koyu buton yazısı */
-    --button-hover-bg: #a1c9ff; /* Buton hover */
-    --link-color: #6ea8fe;
+    --background-color: #121212;
+    --container-bg-color: #212529;
+    --text-color: #f8f9fa;
+    --heading-color: #dee2e6;
+    --location-color: #4dabf7; /* Açık mavi */
+    --secondary-text-color: #adb5bd;
+    --border-color: #495057;
+    --magnitude-high-bg: #f06571;
+    --magnitude-medium-bg: #ffb76a;
+    --magnitude-low-bg: #ffe066;
+    --magnitude-default-bg: #40c057;
+    --magnitude-text-color: #121212;
+    --shadow-color: rgba(255, 255, 255, 0.04);
+    --button-bg: #4dabf7;
+    --button-text: #121212;
+    --button-hover-bg: #74c0fc;
+    --link-color: #4dabf7;
     --code-bg: #343a40;
-    --chart-line-color: #f16270;
-    --chart-bg-color: rgba(241, 98, 112, 0.2);
+    --chart-line-color: #f06571;
+    --chart-bg-color: rgba(240, 101, 113, 0.15);
+    --chart-grid-color: rgba(255, 255, 255, 0.08); /* Koyu tema için hafif grid */
+    /* Border radius aynı kalabilir */
 }
 
 body {
-    font-family: 'Roboto', sans-serif;
+    /* font-family: 'Roboto', sans-serif; */
+    font-family: 'Inter', sans-serif;
     margin: 0;
     padding: 20px;
     background-color: var(--background-color);
     color: var(--text-color);
     line-height: 1.6;
-    /* transition: background-color 0.3s, color 0.3s; */ /* Aşağıda daha genel tanımlandı */
+    font-size: 16px; /* Temel yazı tipi boyutunu ayarla (varsayılan) */
 }
 
 /* Genel Geçişler */
-body, .container, button, a, input, select, .earthquake-item, .magnitude {
-    transition: background-color 0.25s ease-in-out, color 0.25s ease-in-out, border-color 0.25s ease-in-out, box-shadow 0.25s ease-in-out;
+body, .container, button, a, input, select, .earthquake-item, .magnitude, .leaflet-control-zoom a, .leaflet-control-layers-toggle {
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out, opacity 0.2s ease-in-out;
 }
 
 .container {
-    max-width: 800px;
+    max-width: 1100px; /* Yan yana düzende daha geniş olabilir */
     margin: 20px auto;
-    padding: 20px 30px; /* Biraz daha yan boşluk */
+    padding: 25px 40px; /* İç boşlukları biraz artır */
     background-color: var(--container-bg-color);
-    border-radius: 12px; /* Biraz daha yuvarlak */
-    box-shadow: 0 6px 12px var(--shadow-color); /* Biraz daha belirgin gölge */
+    border-radius: var(--border-radius-lg); /* Değişken kullan */
+    box-shadow: 0 4px 15px var(--shadow-color); /* Yeni gölge */
     transition: background-color 0.3s;
     position: relative; /* Buton konumlandırması için */
 }
@@ -94,8 +101,9 @@ body, .container, button, a, input, select, .earthquake-item, .magnitude {
 h1 {
     text-align: center;
     color: var(--heading-color);
-    margin-bottom: 30px;
+    margin-bottom: 35px; /* Alt boşluğu biraz artır */
     font-weight: 700;
+    font-size: 2.25rem; /* Biraz daha büyük başlık (1rem = 16px) */
 }
 
 #earthquake-list {
@@ -111,19 +119,19 @@ h1 {
     justify-content: space-between;
     align-items: center;
     transition: background-color 0.2s, box-shadow 0.2s;
-    border-radius: 8px;
-    margin-bottom: 12px;
-    box-shadow: 0 2px 5px var(--shadow-color);
+    border-radius: var(--border-radius-base); /* Değişken kullan */
+    margin-bottom: 15px; /* Liste öğeleri arası boşluk */
+    box-shadow: 0 2px 8px var(--shadow-color); /* Yeni gölge */
     cursor: pointer;
 }
 
 .earthquake-item:hover {
-    box-shadow: 0 4px 10px var(--shadow-color);
-    background-color: color-mix(in srgb, var(--container-bg-color) 95%, var(--text-color) 5%);
+    box-shadow: 0 4px 12px var(--shadow-color);
+    background-color: color-mix(in srgb, var(--container-bg-color) 97%, var(--text-color) 3%);
 }
 
 body.dark-theme .earthquake-item:hover {
-    background-color: color-mix(in srgb, var(--container-bg-color) 90%, var(--text-color) 10%);
+    background-color: color-mix(in srgb, var(--container-bg-color) 92%, var(--text-color) 8%);
 }
 
 .earthquake-item .details {
@@ -144,8 +152,8 @@ body.dark-theme .earthquake-item:hover {
 }
 
 .location {
+    font-size: 1.15rem; /* Konum biraz daha büyük */
     font-weight: 700;
-    font-size: 1.1em;
     color: var(--location-color);
     margin-bottom: 8px !important;
 }
@@ -162,19 +170,20 @@ body.dark-theme .earthquake-item:hover {
     border-radius: 50%; /* Tam yuvarlak */
     font-weight: bold;
     font-size: 1.3em; /* Biraz daha büyük */
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
     flex-shrink: 0; /* Küçülmesin */
 }
 
 .date-depth, .distance-info {
+    font-size: 0.9rem; /* Detaylar biraz daha büyük */
+    line-height: 1.4; /* Satır yüksekliği */
     color: var(--secondary-text-color);
-    font-size: 0.9em;
     display: flex;
     align-items: center;
 }
 
 .date-depth i, .distance-info i {
-    margin-right: 6px;
+    margin-right: 8px; /* İkon boşluğu */
     font-size: 1em;
     color: var(--secondary-text-color);
     width: 16px;
@@ -183,7 +192,7 @@ body.dark-theme .earthquake-item:hover {
 
 @media (max-width: 600px) {
     .container {
-        padding: 15px;
+        padding: 20px 15px; /* Mobilde yan boşluk az, dikey fazla */
     }
     #theme-toggle {
         top: 10px;
@@ -215,25 +224,25 @@ body.dark-theme .earthquake-item:hover {
     height: 400px; /* Harita yüksekliği */
     width: 100%;
     margin-bottom: 25px; /* Liste ile arasına boşluk */
-    border-radius: 8px;
-    box-shadow: 0 4px 8px var(--shadow-color);
+    border-radius: var(--border-radius-lg);
+    box-shadow: 0 3px 10px var(--shadow-color);
     z-index: 0; /* Diğer elemanların altında kalmaması için */
 }
 
 .controls-container {
     display: grid; /* Grid layout kullanalım */
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Otomatik sığdırma */
-    gap: 20px; /* Öğeler arası boşluk */
+    gap: 20px; /* Boşluğu biraz azalt */
     align-items: start; /* Öğeleri yukarı hizala */
     margin-bottom: 30px; /* Alt boşluğu artır */
     padding: 15px;
-    background-color: color-mix(in srgb, var(--container-bg-color) 90%, var(--text-color) 5%); /* Hafif farklı arka plan */
-    border: 1px solid var(--border-color); /* İnce çerçeve */
-    border-radius: 8px;
+    background-color: color-mix(in srgb, var(--container-bg-color) 95%, var(--text-color) 2%);
+    border-radius: var(--border-radius-lg);
+    border: 1px solid var(--border-color);
 }
 
 body.dark-theme .controls-container {
-    background-color: color-mix(in srgb, var(--container-bg-color) 95%, var(--text-color) 3%);
+    background-color: color-mix(in srgb, var(--container-bg-color) 97%, var(--text-color) 1%);
 }
 
 /* Her bir kontrol grubunu sarmak için (HTML'de eklemek gerekebilir veya mevcutları kullanabiliriz) */
@@ -250,17 +259,18 @@ body.dark-theme .controls-container {
     align-items: stretch; /* Genişliği eşitle */
     margin: 0; /* Controls-container'dan gelen gap yeterli */
     padding: 10px;
+    border-radius: var(--border-radius-base);
     border: 1px solid var(--border-color);
-    border-radius: 6px;
     background-color: var(--container-bg-color); /* Grubun kendi arka planı */
 }
 
 /* Etiketler için genel stil */
 .controls-container label:not(.source-container label):not(.notification-settings label) {
+    font-size: 0.95rem; /* Biraz daha büyük etiketler */
+    margin-bottom: 8px; /* Boşluğu artır */
     font-weight: 500;
     color: var(--secondary-text-color);
-    margin-bottom: 5px; /* Input ile arasına boşluk */
-    display: block; /* Tam genişlik */
+    display: block;
 }
 
 /* Kaynak ve Bildirim checkbox etiketleri yan yana kalsın */
@@ -274,11 +284,12 @@ body.dark-theme .controls-container {
 
 .source-container label,
 .notification-settings label {
-    margin-right: 15px; /* Seçenekler arası boşluk */
-    margin-bottom: 5px; /* Alt alta kayarsa */
-    font-weight: normal; /* Normal kalınlık */
+    font-size: 0.9rem; /* Radio/checkbox etiketleri biraz daha küçük */
+    margin-right: 15px;
+    margin-bottom: 5px;
+    font-weight: normal;
     cursor: pointer;
-    display: inline-flex; /* İkon/checkbox ile hizala */
+    display: inline-flex;
     align-items: center;
 }
 
@@ -417,15 +428,19 @@ body.dark-theme #notification-magnitude-value {
 .modal-content {
     background-color: var(--container-bg-color);
     margin: 5% auto;
-    padding: 25px 35px;
-    border: 1px solid var(--border-color);
+    padding: 30px 40px; /* Daha fazla iç boşluk */
+    border: none; /* Çerçeveyi kaldır */
     width: 80%; /* Genişlik */
     max-width: 600px; /* Maksimum genişlik */
-    border-radius: 10px;
+    border-radius: var(--border-radius-lg);
     position: relative;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
     animation-name: animatetop;
     animation-duration: 0.4s;
+}
+
+body.dark-theme .modal-content {
+    box-shadow: 0 5px 25px rgba(0,0,0,0.25);
 }
 
 /* Modal açılma animasyonu */
@@ -437,10 +452,11 @@ body.dark-theme #notification-magnitude-value {
 .close-button {
     color: var(--secondary-text-color);
     position: absolute;
-    top: 10px;
-    right: 20px;
-    font-size: 28px;
+    top: 15px; /* Biraz aşağı */
+    right: 25px; /* Biraz içeri */
+    font-size: 32px; /* Biraz daha büyük */
     font-weight: bold;
+    line-height: 1; /* Dikey hizalama için */
 }
 
 .close-button:hover,
@@ -452,42 +468,50 @@ body.dark-theme #notification-magnitude-value {
 
 .modal-content h2 {
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 25px; /* Başlık alt boşluğu */
     color: var(--heading-color);
+    font-size: 1.75rem; /* Biraz daha küçük */
 }
 
 #modal-body p {
-    margin-bottom: 10px;
+    margin-bottom: 12px; /* Paragraflar arası boşluk */
     line-height: 1.5;
     color: var(--text-color);
+    font-size: 1rem; /* Yazı boyutu */
 }
 
 #modal-body strong {
-    color: var(--location-color); /* Veya başka bir vurgu rengi */
-    min-width: 100px; /* Başlıkların hizalı durması için */
+    min-width: 90px; /* Biraz daha dar */
     display: inline-block;
+    margin-right: 10px; /* Başlık ve değer arası boşluk */
+    color: var(--heading-color); /* Başlık rengiyle aynı */
+    font-weight: 600; /* Biraz daha kalın */
 }
 
 /* Yükleniyor Göstergesi */
 #loading {
     display: none; /* Başlangıçta gizli */
     text-align: center;
-    padding: 30px 20px;
-    color: var(--secondary-text-color);
-    font-size: 1.1em;
+    padding: 40px 20px; /* İkon için yeterli alan */
+    font-size: 0; /* Metni tamamen gizle */
+    position: relative; /* İkonu ortalamak için */
+    min-height: 80px; /* Alanı koru */
 }
 
-#loading::before { /* Basit bir dönen ikon */
+#loading::before { /* Dönen ikon */
     content: "";
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    margin-right: 10px;
-    border: 3px solid rgba(128, 128, 128, 0.3);
+    display: block;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 30px; /* Boyut artır */
+    height: 30px; /* Boyut artır */
+    margin-left: -15px; /* Yarısı kadar sola çek */
+    margin-top: -15px; /* Yarısı kadar yukarı çek */
+    border: 4px solid var(--border-color); /* Daha belirgin çerçeve */
     border-radius: 50%;
-    border-top-color: var(--heading-color);
-    animation: spin 1s ease-in-out infinite;
-    vertical-align: middle;
+    border-top-color: var(--button-bg); /* Ana buton rengi */
+    animation: spin 0.8s linear infinite; /* Daha hızlı animasyon */
 }
 
 @keyframes spin {
@@ -539,4 +563,146 @@ body.dark-theme #error-message {
     min-width: 30px;
     display: inline-block;
     text-align: right;
+}
+
+/* --- Leaflet Kontrol Stilleri --- */
+
+.leaflet-control-zoom a,
+.leaflet-control-layers-toggle {
+    background-color: var(--container-bg-color) !important;
+    color: var(--text-color) !important;
+    border-radius: 4px !important;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.2);
+    border: 1px solid var(--border-color);
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.leaflet-control-zoom a:hover,
+.leaflet-control-layers-toggle:hover {
+    background-color: color-mix(in srgb, var(--container-bg-color) 90%, var(--text-color) 10%) !important;
+    color: var(--text-color) !important; /* Hover'da renk değişimi opsiyonel */
+}
+
+.leaflet-control-zoom a.leaflet-disabled {
+    background-color: var(--secondary-text-color) !important;
+    opacity: 0.5;
+    cursor: default;
+}
+
+/* Katman kontrolü açılır menüsü */
+.leaflet-control-layers {
+    border-radius: 5px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.2);
+    border: 1px solid var(--border-color);
+    background: var(--container-bg-color);
+    color: var(--text-color);
+}
+
+.leaflet-control-layers-base label,
+.leaflet-control-layers-overlays label {
+    color: var(--text-color); /* İçindeki metin rengi */
+    font-weight: normal;
+    display: flex;
+    align-items: center;
+}
+
+.leaflet-control-layers-selector {
+    margin-right: 6px; /* Radio/checkbox ile metin arası */
+}
+
+/* Harita Popup Stilleri */
+.leaflet-popup-content-wrapper {
+    background: var(--container-bg-color);
+    color: var(--text-color);
+    border-radius: 8px;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.4);
+    border: 1px solid var(--border-color);
+}
+
+.leaflet-popup-content {
+    margin: 13px 19px;
+    line-height: 1.5;
+    font-size: 0.95em;
+}
+
+.leaflet-popup-content strong {
+    color: var(--location-color); /* Popup başlığı için tema rengi */
+    font-weight: 700;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.leaflet-popup-tip-container {
+    /* Ok görünümü pek stillendirilemiyor ama gerekirse gizlenebilir */
+}
+.leaflet-popup-close-button {
+    color: var(--secondary-text-color) !important;
+    padding: 4px 4px 0 0;
+}
+.leaflet-popup-close-button:hover {
+    color: var(--text-color) !important;
+}
+
+/* --- Ana İçerik Düzeni (Harita + Liste) --- */
+
+.main-content {
+    display: flex;
+    gap: 25px; /* Harita/liste arası boşluk */
+    margin-bottom: 30px; /* Grafik ile arasına boşluk */
+    align-items: flex-start; /* Öğeleri yukarı hizala */
+}
+
+#map {
+    flex: 1 1 60%; /* Esneklik: büyüme 1, küçülme 1, temel genişlik %60 */
+    /* height: 400px; */ /* Yüksekliği kaldırıp esnek yapalım */
+    height: 600px; /* Veya sabit ama daha büyük bir yükseklik */
+    min-height: 400px;
+    /* margin-bottom: 25px; */ /* Kaldırıldı, gap kullanılıyor */
+    position: sticky; /* Kaydırma sırasında ekranda kalması için (opsiyonel) */
+    top: 20px; /* Yukarıdan boşluk (sticky için) */
+     border-radius: var(--border-radius-lg);
+     box-shadow: 0 3px 10px var(--shadow-color);
+     z-index: 0;
+}
+
+#earthquake-list {
+    flex: 1 1 40%; /* Esneklik: büyüme 1, küçülme 1, temel genişlik %40 */
+    max-height: 600px; /* Harita ile aynı yükseklik */
+    overflow-y: auto; /* İçerik sığmazsa dikey kaydırma çubuğu */
+    /* margin-top: 25px; */ /* Kaldırıldı */
+    /* Kendi arka planına veya çerçevesine gerek yok, .earthquake-item'lar hallediyor */
+    padding: 0;
+    list-style: none;
+    padding-right: 5px; /* Kaydırma çubuğu için hafif boşluk */
+}
+
+/* Küçük ekranlarda harita ve liste alt alta gelsin */
+@media (max-width: 992px) { /* Tablet ve altı */
+    .main-content {
+        flex-direction: column;
+        gap: 25px;
+    }
+
+    #map {
+        flex-basis: auto; /* Genişliği serbest bırak */
+        height: 450px; /* Yüksekliği ayarla */
+        position: static; /* Sticky özelliğini kaldır */
+    }
+
+    #earthquake-list {
+        flex-basis: auto; /* Genişliği serbest bırak */
+        max-height: 500px; /* Maksimum yüksekliği ayarla */
+        overflow-y: auto;
+    }
+}
+
+/* Grafik Alanı */
+.chart-container {
+    /* margin-top: 30px; */ /* Üst boşluk main-content'ten geldi */
+    padding: 20px;
+    background-color: var(--container-bg-color);
+    border-radius: var(--border-radius-lg);
+    /* box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); */
+    box-shadow: 0 2px 8px var(--shadow-color);
+    border: 1px solid var(--border-color);
 } 

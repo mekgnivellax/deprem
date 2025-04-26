@@ -46,6 +46,7 @@ let currentDistanceFilter = 2000; // Varsayılan maks mesafe (veya uygun bir de�
 let selectedDate = null; // Seçili tarih (geçmiş veriler için)
 let pollingIntervalId = null; // Otomatik yenileme ID'si
 let lastCheckedTimestamp = 0; // Bildirimler için son kontrol zamanı
+let initialNotificationNeeded = false; // İlk bildirim için bayrak
 let notificationPermission = 'default'; // Bildirim izni durumu (default, granted, denied)
 let notificationsEnabled = true; // Bildirimler varsayılan olarak etkin
 let minNotificationMagnitude = 4.0; // Varsayılan min bildirim büyüklüğü
@@ -120,87 +121,102 @@ function initializeChart() {
 
     // CSS değişkenlerinden renkleri al
     const style = getComputedStyle(document.documentElement);
-    const lineColor = style.getPropertyValue('--chart-line-color').trim() || 'rgba(211, 47, 47, 1)';
-    const bgColor = style.getPropertyValue('--chart-bg-color').trim() || 'rgba(211, 47, 47, 0.2)';
-    const gridColor = style.getPropertyValue('--border-color').trim() || 'rgba(0, 0, 0, 0.1)';
+    const lineColor = style.getPropertyValue('--chart-line-color').trim() || '#dc3545';
+    const bgColor = style.getPropertyValue('--chart-bg-color').trim() || 'rgba(220, 53, 69, 0.1)';
+    const gridColor = style.getPropertyValue('--chart-grid-color').trim() || 'rgba(0, 0, 0, 0.05)'; // Yeni grid rengi değişkeni
     const textColor = style.getPropertyValue('--text-color').trim() || '#333';
+    const tooltipBgColor = style.getPropertyValue('--container-bg-color').trim() || '#fff';
+    const fontFamily = style.getPropertyValue('font-family') || 'Inter, sans-serif'; // Fontu da alalım
 
     earthquakeChart = new Chart(chartCanvas, {
-        type: 'line', // Çizgi grafik
+        type: 'line',
         data: {
-            labels: [], // Deprem zamanları (veya indexleri)
+            labels: [],
             datasets: [{
                 label: 'Deprem Büyüklüğü (ML)',
-                data: [], // Büyüklükler
-                borderColor: lineColor, // CSS değişkeninden
-                backgroundColor: bgColor, // CSS değişkeninden
-                borderWidth: 1.5,
-                tension: 0.1, // Hafif eğim
-                pointBackgroundColor: lineColor, // Ana renk
-                pointRadius: 3,
-                pointBorderColor: lineColor, // Nokta çerçeve rengi
-                pointHoverRadius: 5, // Hover'da büyüme
-                pointHoverBackgroundColor: lineColor
+                data: [],
+                borderColor: lineColor,
+                backgroundColor: bgColor,
+                borderWidth: 2, // Biraz daha kalın çizgi
+                tension: 0.3, // Daha yumuşak eğim
+                pointRadius: 0, // Noktaları normalde gizle
+                pointBackgroundColor: lineColor,
+                pointBorderColor: lineColor,
+                pointHoverRadius: 5, // Hover'da göster
+                pointHoverBackgroundColor: tooltipBgColor, // Hover nokta içi
+                pointHoverBorderColor: lineColor, // Hover nokta çerçevesi
+                pointHoverBorderWidth: 2,
+                fill: true // Alanı doldur
             }]
         },
         options: {
             scales: {
                 y: {
                     beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Büyüklük (ML)',
-                        color: textColor // Eksen başlığı rengi
+                    border: { display: false }, // Eksen çizgisini kaldır
+                    grid: {
+                        color: gridColor, // Daha soluk grid
+                        // drawBorder: false,
                     },
                     ticks: {
-                         color: textColor // Eksen değerleri rengi
-                    },
-                    grid: {
-                        color: gridColor // Grid çizgileri rengi
+                         color: textColor,
+                         font: { family: fontFamily }
                     }
                 },
                 x: {
-                     title: {
-                        display: true,
-                        text: 'Zaman (En Yeni -> En Eski)',
-                        color: textColor // Eksen başlığı rengi
+                    border: { display: false }, // Eksen çizgisini kaldır
+                    grid: {
+                         color: gridColor, // Daha soluk grid
+                         // drawBorder: false,
                     },
                      ticks: {
-                         color: textColor // Eksen değerleri rengi
-                    },
-                    grid: {
-                        color: gridColor // Grid çizgileri rengi
+                         color: textColor,
+                         font: { family: fontFamily },
+                         maxRotation: 0, // Etiketleri döndürme
+                         autoSkip: true, // Otomatik atlama
+                         maxTicksLimit: 7 // Maksimum etiket sayısı
                     }
                 }
             },
             responsive: true,
             maintainAspectRatio: false,
+            interaction: { // Hover ve tooltip etkileşimleri
+                 mode: 'index',
+                 intersect: false,
+            },
             plugins: {
-                legend: {
-                    display: false, // Tek veri seti olduğu için legend'ı gizle
-                    labels: {
-                        color: textColor // Legend rengi (gerekirse)
-                    }
-                },
-                 tooltip: {
-                    backgroundColor: style.getPropertyValue('--container-bg-color').trim() || '#fff',
+                legend: { display: false },
+                tooltip: {
+                    enabled: true,
+                    backgroundColor: tooltipBgColor,
                     titleColor: textColor,
                     bodyColor: textColor,
                     borderColor: gridColor,
                     borderWidth: 1,
-                     callbacks: {
-                        // Tooltip'te ek bilgi gösterme (opsiyonel)
-                        // label: function(context) {
-                        //     let label = context.dataset.label || '';
-                        //     // ... context.raw kullanarak ilgili deprem bilgisini allEarthquakes'dan bulup ekle ...
-                        //     return label;
-                        // }
+                    padding: 10, // İç boşluk
+                    caretPadding: 10, // Ok ile kutu arası boşluk
+                    caretSize: 6, // Ok boyutu
+                    cornerRadius: 6, // Köşe yuvarlaklığı (Sabit değer veya JS ile hesapla)
+                    usePointStyle: true, // Nokta stilini kullan (legend için)
+                    boxPadding: 3,
+                    titleFont: { family: fontFamily, weight: '600' },
+                    bodyFont: { family: fontFamily },
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += context.parsed.y.toFixed(1);
+                            }
+                            return label;
+                        }
                     }
                  }
             }
         }
     });
-     // console.log('Grafik başlatıldı.');
 }
 
 // Grafik Güncelleme Fonksiyonu
@@ -587,19 +603,15 @@ function getUserLocation() {
 
 async function fetchEarthquakes() {
     // Yükleniyor durumunu göster, eski hataları temizle
-    loadingIndicator.style.display = 'block'; // Göstergeyi göster
-    errorContainer.style.display = 'none'; // Eski hatayı gizle
-    errorContainer.textContent = ''; // Hata mesajını temizle
-    earthquakeList.innerHTML = ''; // Listeyi temizle (Yükleniyor yazısı yerine gösterge var)
-    earthquakeList.classList.remove('loading-text'); // Varsa eski classı kaldır
-    // Haritayı temizlemek opsiyonel, belki eski işaretçiler kalsa daha iyi?
-    // if(earthquakeLayerGroup) earthquakeLayerGroup.clearLayers();
+    if (loadingIndicator) loadingIndicator.style.display = 'block';
+    if (errorContainer) errorContainer.style.display = 'none';
+    // earthquakeList.innerHTML = ''; // Liste temizleme display'de yapılıyor
 
     const locationPromise = getUserLocation(); // Konum alma paralel başlasın
 
     // API URL'sini belirle
     let apiUrl;
-    let isOrhanAydAPI = false; // Hangi API'nin kullanıldığını takip et
+    let isOrhanAydAPI = false;
     if (currentDataSource === 'kandilli') {
         isOrhanAydAPI = true;
         if (currentDate) {
@@ -634,10 +646,8 @@ async function fetchEarthquakes() {
         if (isOrhanAydAPI) {
             if (data && data.status && data.result) {
                  earthquakesRaw = data.result;
-            } else if (data && !data.status && data.desc === 'Bu tarihe ait veri bulunamadı.') {
-                 console.log('Seçilen tarih için veri yok.');
-            } else if (data && data.http_status === 404 && data.desc === "Arşiv bulunamadı.") { // Arşiv yok hatası
-                 console.log('Seçilen tarih için Kandilli arşivi bulunamadı.');
+            } else if (data && !data.status && (data.desc?.includes('veri bulunamadı') || data.desc?.includes('Arşiv bulunamadı'))) {
+                 console.log('Seçilen kaynak/tarih için veri yok.');
             } else {
                  console.warn('Beklenmeyen Kandilli API yanıtı:', data);
             }
@@ -649,83 +659,101 @@ async function fetchEarthquakes() {
             }
         }
 
-        // Veri işlendikten sonra yükleniyor göstergesini gizle
-        loadingIndicator.style.display = 'none';
+        // Yükleniyor göstergesini veri işlendikten sonra gizle
+        if (loadingIndicator) loadingIndicator.style.display = 'none';
 
         if (earthquakesRaw.length > 0) {
-            const currentTimestamp = Date.now(); // Mevcut zamanı al
+            const currentTimestamp = Date.now();
 
-            // Yeni depremleri bul (bildirim için)
+            // --- Periyodik Yeni Deprem Bildirimleri --- (İlk çalıştırmada göndermez)
             const newEarthquakes = earthquakesRaw.filter(eq => {
-                const eqTimestamp = getTimestamp(eq) * 1000; // API'den gelen saniye cinsinden ise ms'ye çevir
-                // API yanıtına göre kontrol et: orhanayd 'created_at', emirkabal 'timestamp'
-                return eqTimestamp > lastCheckedTimestamp;
+                const eqTimestamp = getTimestamp(eq) * 1000; // ms'ye çevir
+                // lastCheckedTimestamp 0 ise veya deprem zamanı ondan küçükse, yeni değildir.
+                return lastCheckedTimestamp > 0 && eqTimestamp > lastCheckedTimestamp;
             });
 
             // console.log(`Son kontrol: ${new Date(lastCheckedTimestamp)}, Yeni deprem sayısı: ${newEarthquakes.length}`);
 
-            if (lastCheckedTimestamp > 0 && newEarthquakes.length > 0 && notificationsEnabled && notificationPermission === 'granted') { // Etkinlik ve izin kontrolü eklendi
-                // Bildirim gönderme mantığı
+            if (newEarthquakes.length > 0 && notificationsEnabled && notificationPermission === 'granted') {
+                 // En yeni olanları önce bildirelim (liste zaten genelde ters sıralı gelir ama garanti edelim)
+                 newEarthquakes.sort((a, b) => getTimestamp(b) - getTimestamp(a));
                 newEarthquakes.forEach(eq => {
                     const magnitude = getMagnitude(eq);
-                    // Kullanıcının belirlediği eşik değeri kullan
                     if (magnitude >= minNotificationMagnitude) {
-                        const title = `${magnitude.toFixed(1)} Büyüklüğünde Deprem`;
+                        const title = `${magnitude.toFixed(1)} Büyüklüğünde Yeni Deprem`;
                         const body = `${getLocationTitle(eq)}`;
                         showNotification(title, body);
-                        console.log(`Bildirim Gönderildi (Min ${minNotificationMagnitude.toFixed(1)}):`, title, body);
+                        console.log(`Yeni Deprem Bildirimi (Min ${minNotificationMagnitude.toFixed(1)}):`, title);
                     }
                 });
             }
+            // --- Periyodik Bildirim Sonu ---
 
-            // Son kontrol zamanını güncelle (en yeni depremin zamanı olabilir veya mevcut zaman)
-            if (earthquakesRaw.length > 0) {
-                 const latestTimestamp = Math.max(...earthquakesRaw.map(eq => (getTimestamp(eq) || 0) * 1000));
-                 // Eğer API çok eski veri döndürürse diye mevcut zamanla karşılaştır
-                 lastCheckedTimestamp = Math.max(lastCheckedTimestamp, latestTimestamp, currentTimestamp - 60000); // Son 1dk içinde gelmişse bile yakala
-            } else {
-                 lastCheckedTimestamp = currentTimestamp;
-            }
+            // Son kontrol zamanını güncelle (Her zaman en yeni depremin zamanı olmalı)
+             const latestTimestamp = Math.max(0, ...earthquakesRaw.map(eq => (getTimestamp(eq) || 0) * 1000));
+              // Eğer API'den hiç geçerli timestamp gelmezse (latestTimestamp=0), mevcut zamanı kullan
+             const validLatestTimestamp = latestTimestamp > 0 ? latestTimestamp : currentTimestamp;
+              // lastCheckedTimestamp'ı sadece ileri taşıyalım
+             lastCheckedTimestamp = Math.max(lastCheckedTimestamp, validLatestTimestamp);
+             // console.log("Yeni son kontrol zamanı:", new Date(lastCheckedTimestamp));
 
             // ID'leri ekleyerek allEarthquakes'i oluştur
-            allEarthquakes = earthquakesRaw.map((eq, index) => ({ ...eq, internal_id: getEarthquakeId(eq, currentDataSource) }));
-            filterAndDisplayData(); // Filtrele, sırala ve göster
+            allEarthquakes = earthquakesRaw.map((eq) => ({ ...eq, internal_id: getEarthquakeId(eq, currentDataSource) }));
+            filterAndDisplayData(); // Filtrele, sırala ve göster (displayEarthquakes burada çağrılır)
         } else {
             // Veri yoksa
             allEarthquakes = [];
-            earthquakeList.innerHTML = '<div class="loading-text">Gösterilecek deprem verisi bulunamadı.</div>'; // Liste alanında mesaj göster
-            earthquakeList.classList.add('loading-text');
-            if(earthquakeLayerGroup) earthquakeLayerGroup.clearLayers(); // Haritayı temizle
-             if(earthquakeChart) updateChart([]); // Grafiği temizle
-            lastCheckedTimestamp = Date.now(); // Veri olmasa da zamanı güncelle
+            filterAndDisplayData(); // Boş listeyi göstermek için yine de çağır
+            // earthquakeList.innerHTML = '<div class="loading-text">Gösterilecek deprem verisi bulunamadı.</div>';
+            // Veri olmasa da lastCheckedTimestamp güncellenebilir mi? Belki hayır.
         }
 
     } catch (error) {
         console.error('Deprem verileri alınırken hata oluştu:', error);
-        loadingIndicator.style.display = 'none'; // Hata durumunda da göstergeyi gizle
+        if (loadingIndicator) loadingIndicator.style.display = 'none';
         allEarthquakes = [];
-        earthquakeList.innerHTML = ''; // Listeyi temizle
-        if(earthquakeLayerGroup) earthquakeLayerGroup.clearLayers(); // Haritayı temizle
-        if(earthquakeChart) updateChart([]); // Grafiği temizle
+        filterAndDisplayData(); // Hata durumunda da boş listeyi göster
         // Hata mesajını göster
-        errorContainer.textContent = `Hata: ${error.message}. Lütfen tekrar deneyin veya farklı bir kaynak/tarih seçin.`;
-        errorContainer.style.display = 'block';
-        lastCheckedTimestamp = Date.now(); // Hata olsa da zamanı güncelle
+        if (errorContainer) {
+             errorContainer.textContent = `Hata: ${error.message}. Lütfen tekrar deneyin veya farklı bir kaynak/tarih seçin.`;
+             errorContainer.style.display = 'block';
+        }
+         // Hata durumunda timestamp'i güncellemek kafa karıştırıcı olabilir, güncelleme yapmayalım.
     }
 }
 
 // Deprem Verilerini Gösterme Fonksiyonu
 function displayEarthquakes(earthquakes) {
     if (!earthquakeList) return;
+
+    // --- İlk Bildirim Kontrolü --- (Listeyi oluşturmadan hemen önce)
+    if (initialNotificationNeeded && earthquakes.length > 0 && notificationPermission === 'granted' && notificationsEnabled) {
+        const latestEarthquake = earthquakes[0]; // earthquakes zaten sıralanmış olmalı
+        const magnitude = getMagnitude(latestEarthquake);
+        if (magnitude >= minNotificationMagnitude) {
+             const title = `${magnitude.toFixed(1)} Büyüklüğünde Deprem (En Son)`;
+             const body = `${getLocationTitle(latestEarthquake)}`;
+             showNotification(title, body);
+             console.log('İlk bildirim gönderildi (İzin sonrası en son deprem): ', title);
+        }
+        initialNotificationNeeded = false; // Bayrağı sıfırla, sadece bir kere çalışsın
+    }
+    // --- İlk Bildirim Kontrolü Sonu ---
+
     earthquakeList.innerHTML = ''; // Mevcut listeyi temizle
 
-    // Yükleniyor göstergesini gizle (veri varsa veya yoksa)
-    if (loadingIndicator) loadingIndicator.style.display = 'none';
+    // Yükleniyor göstergesini gizle (display'e taşındı, veri varsa veya yoksa çalışır)
+    // if (loadingIndicator) loadingIndicator.style.display = 'none';
 
     if (earthquakes.length === 0) {
-        earthquakeList.innerHTML = '<li>Gösterilecek deprem bulunamadı. Filtreleri veya tarih seçimini kontrol edin.</li>';
-        updateMapMarkers([]); // Haritayı da temizle
-        updateChart([]); // Grafiği de temizle
+        // Boş liste mesajını filterAndDisplayData'dan sonra burada ayarlayalım
+        if (allEarthquakes.length > 0) { // Filtreleme sonucu boşsa
+            earthquakeList.innerHTML = '<li>Filtreye uygun deprem bulunamadı.</li>';
+        } else { // Hiç veri yoksa (API'den boş geldi veya hata)
+            earthquakeList.innerHTML = '<li>Gösterilecek deprem verisi bulunamadı.</li>';
+        }
+        updateMapMarkers([]); // Haritayı temizle
+        updateChart([]); // Grafiği temizle
         return;
     }
 
@@ -774,7 +802,7 @@ function displayEarthquakes(earthquakes) {
                     <i class="far fa-calendar-alt"></i> ${dateStr || 'Bilinmeyen Zaman'} |
                     <i class="fas fa-arrows-alt-v"></i> Derinlik: ${depth !== null && !isNaN(depth) ? depth.toFixed(1) + ' km' : 'N/A'}
                 </span>
-                ${distanceInfoHtml}  <!-- Yeni mesafe bilgisi span'ı buraya eklendi -->
+                ${distanceInfoHtml}
             </div>
              <div class="map-icon-container">
                 <i class="fas fa-map-marker-alt map-icon" title="Haritada göster"></i>
@@ -826,20 +854,20 @@ function displayEarthquakes(earthquakes) {
 
     // Harita ve Grafik Güncelleme
     updateMapMarkers(earthquakes);
-    updateChart(earthquakes); // Grafiği güncelle
-
-    // console.log(`${earthquakes.length} deprem listelendi ve harita/grafik güncellendi.`);
+    updateChart(earthquakes);
 }
 
 // Harita İşaretçilerini Güncelleme Fonksiyonu
 function updateMapMarkers(earthquakes) {
     if (!map || !earthquakeLayerGroup) {
-        console.error('Harita veya katman grubu başlatılamadı.');
+        // Harita veya grup henüz hazır değilse işlemi erteleyebilir veya uyarı verebiliriz.
+        // Bu noktada DOMContentLoaded sıralamasını düzelttiğimiz için buraya düşmemesi gerekir.
+         console.warn('updateMapMarkers çağrıldı ancak harita veya katman grubu hazır değil.');
         return;
     }
 
     earthquakeLayerGroup.clearLayers();
-    earthquakeMarkers = {};
+    earthquakeMarkers = {}; // Eski işaretçi referanslarını temizle
 
     const markers = [];
     earthquakes.forEach((eq, index) => {
@@ -848,23 +876,35 @@ function updateMapMarkers(earthquakes) {
             const lat = coords.lat;
             const lon = coords.lon;
             const mag = getMagnitude(eq) || 0;
+            const depth = getDepth(eq); // Derinlik bilgisini al
+            const dateStr = getDateString(eq); // Tarih bilgisini al
             const title = getLocationTitle(eq);
-            const eqId = eq.internal_id; // internal_id kullan
+            const eqId = getEarthquakeId(eq, currentDataSource); // ID'yi al (internal_id yerine bu daha tutarlı olabilir)
 
-            let markerColor = 'blue';
-            let markerRadius = 5 + mag * 1.5;
-            if (mag >= 4.0) markerColor = 'red';
-            else if (mag >= 3.0) markerColor = 'orange';
+            // Renk ve boyut hesaplama
+            let markerColor = getMagnitudeColor(mag); // Renkleri CSS değişkenlerinden al
+            let markerRadius = 6 + mag * 2.5; // Büyüklükle daha orantılı boyut
+
+             // Popup içeriğini oluştur
+            const popupContent = `
+                <div class="map-popup">
+                    <strong>${title}</strong><br>
+                    Büyüklük: ${mag > 0 ? mag.toFixed(1) : 'N/A'}<br>
+                    Derinlik: ${depth !== null && !isNaN(depth) ? depth.toFixed(1) + ' km' : 'N/A'}<br>
+                    Zaman: ${dateStr || 'N/A'}
+                </div>
+            `;
 
             const marker = L.circleMarker([lat, lon], {
                     radius: markerRadius,
                     fillColor: markerColor,
-                    color: '#000',
+                    // color: '#000', // Çerçeve rengi (belki temaya göre ayarlanabilir)
+                    color: markerColor, // Çerçeve rengi dolguyla aynı veya biraz koyusu olabilir
                     weight: 1,
                     opacity: 1,
-                    fillOpacity: 0.7
+                    fillOpacity: 0.8 // Dolgu opaklığını biraz artır
                 })
-                .bindPopup(`<b>${title}</b><br>Büyüklük: ${mag > 0 ? mag.toFixed(1) : 'N/A'}`);
+                .bindPopup(popupContent);
 
             markers.push(marker);
             if(eqId) {
@@ -874,6 +914,7 @@ function updateMapMarkers(earthquakes) {
     });
 
     earthquakeLayerGroup.addLayers(markers);
+    // console.log(`${markers.length} adet işaretçi haritaya eklendi.`);
 }
 
 // Sayfa yüklendiğinde ve her 10 saniyede bir verileri yenile
@@ -1028,12 +1069,17 @@ async function requestNotificationPermission() {
 
     try {
         const permissionResult = await Notification.requestPermission();
-        notificationPermission = permissionResult;
-        updateNotificationButtonState();
+        notificationPermission = permissionResult; // Global değişkeni güncelle
+        updateNotificationButtonState(); // Buton durumunu güncelle
+
         if (permissionResult === 'granted') {
             console.log('Bildirim izni verildi.');
-            // İzin verilince belki bir test bildirimi gönderilebilir (opsiyonel)
-             // showNotification('Test Bildirimi', 'Bildirim izni başarıyla alındı!');
+            initialNotificationNeeded = true; // İlk bildirim bayrağını ayarla
+            // İzin verildikten sonra listeyi/veriyi yeniden işleterek
+            // initialNotificationNeeded kontrolünün displayEarthquakes'te yapılmasını sağla.
+            filterAndDisplayData();
+            // İsteğe bağlı test bildirimi:
+            // showNotification('Bildirimler Etkin!', 'Yeni depremler artık bildirilecek.');
         } else if (permissionResult === 'denied') {
             console.log('Bildirim izni reddedildi.');
             alert('Bildirimler engellendi. Tarayıcı ayarlarından izin vermeniz gerekebilir.');
