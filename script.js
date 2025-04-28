@@ -5,6 +5,8 @@ const magnitudeFilter = document.getElementById('magnitude-filter'); // Filtre i
 const magnitudeValueSpan = document.getElementById('magnitude-value'); // Filtre değer span
 const distanceFilter = document.getElementById('distance-filter'); // Mesafe filtresi input
 const distanceValueSpan = document.getElementById('distance-value'); // Mesafe değer span
+const depthFilter = document.getElementById('depth-filter'); // Derinlik filtresi input
+const depthValueSpan = document.getElementById('depth-value'); // Derinlik değer span
 const sortBySelect = document.getElementById('sort-by'); // Sıralama ölçütü
 const sortOrderSelect = document.getElementById('sort-order'); // Sıralama yönü
 const sourceRadios = document.querySelectorAll('input[name="source"]'); // Kaynak radio butonları
@@ -20,6 +22,12 @@ const notificationPermissionButton = document.getElementById('request-notificati
 const enableNotificationsCheckbox = document.getElementById('enable-notifications'); // Bildirim etkinleştirme checkbox'ı
 const notificationMagnitudeInput = document.getElementById('notification-magnitude'); // Bildirim büyüklük ayarı
 const notificationMagnitudeValueSpan = document.getElementById('notification-magnitude-value'); // Bildirim büyüklük değeri span'ı
+const enableDistanceNotificationCheckbox = document.getElementById('enable-distance-notification'); // Mesafe bildirim checkbox'ı
+const notificationDistanceSettingDiv = document.querySelector('.notification-distance-setting'); // Mesafe ayar div'i
+const notificationDistanceInput = document.getElementById('notification-distance'); // Mesafe bildirim ayarı
+const notificationDistanceValueSpan = document.getElementById('notification-distance-value'); // Mesafe bildirim değeri span'ı
+const downloadCsvButton = document.getElementById('download-csv'); // CSV İndirme Butonu
+const downloadJsonButton = document.getElementById('download-json'); // JSON İndirme Butonu
 
 // API URL'leri
 const afadApiUrl = 'https://deprem-api.vercel.app/?type=afad';
@@ -36,6 +44,7 @@ let currentSortBy = 'date'; // Başlangıç sıralama ölçütü
 let currentSortOrder = 'desc'; // Başlangıç sıralama yönü
 let currentDataSource = 'kandilli'; // Başlangıç kaynak
 let currentDate = null; // Seçili tarih (YYYY-MM-DD formatında veya null)
+let currentMaxDepth = 200; // Başlangıç maks derinlik filtresi (200 = Tümü)
 let allEarthquakes = [];
 let earthquakeMarkers = {};
 let earthquakeChart = null; // Grafik objesi referansı
@@ -50,6 +59,126 @@ let initialNotificationNeeded = false; // İlk bildirim için bayrak
 let notificationPermission = 'default'; // Bildirim izni durumu (default, granted, denied)
 let notificationsEnabled = true; // Bildirimler varsayılan olarak etkin
 let minNotificationMagnitude = 4.0; // Varsayılan min bildirim büyüklüğü
+let notificationDistanceEnabled = false; // Mesafe bildirimi varsayılan olarak kapalı
+let maxNotificationDistance = 100; // Varsayılan maks bildirim mesafesi (km)
+let processedEarthquakesForDownload = []; // Global değişken için işlenmiş veri
+
+// Debounce fonksiyonu
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// --- Ayarları Yükleme/Kaydetme ---
+function saveSettings() {
+    try {
+        // Bildirim Ayarları
+        localStorage.setItem('notificationsEnabled', JSON.stringify(notificationsEnabled));
+        localStorage.setItem('minNotificationMagnitude', minNotificationMagnitude);
+        localStorage.setItem('notificationDistanceEnabled', JSON.stringify(notificationDistanceEnabled));
+        localStorage.setItem('maxNotificationDistance', maxNotificationDistance);
+
+        // Filtre Ayarları
+        localStorage.setItem('currentMinMagnitude', currentMinMagnitude);
+        localStorage.setItem('currentMaxDistance', currentMaxDistance);
+        localStorage.setItem('currentMaxDepth', currentMaxDepth);
+
+        // Sıralama Ayarları
+        localStorage.setItem('currentSortBy', currentSortBy);
+        localStorage.setItem('currentSortOrder', currentSortOrder);
+
+        // Kaynak Ayarı
+        localStorage.setItem('currentDataSource', currentDataSource);
+
+        // console.log('Ayarlar kaydedildi.');
+    } catch (e) {
+        console.error("'LocalStorage'a ayarlar kaydedilemedi:", e);
+    }
+}
+
+function loadSettings() {
+    try {
+        // Bildirim Ayarları
+        const savedEnabled = localStorage.getItem('notificationsEnabled');
+        const savedMagnitude = localStorage.getItem('minNotificationMagnitude');
+        const savedDistanceEnabled = localStorage.getItem('notificationDistanceEnabled');
+        const savedDistance = localStorage.getItem('maxNotificationDistance');
+
+        if (savedEnabled !== null) notificationsEnabled = JSON.parse(savedEnabled);
+        if (savedMagnitude !== null) minNotificationMagnitude = parseFloat(savedMagnitude);
+        if (savedDistanceEnabled !== null) notificationDistanceEnabled = JSON.parse(savedDistanceEnabled);
+        if (savedDistance !== null) maxNotificationDistance = parseFloat(savedDistance);
+
+        // Filtre Ayarları
+        const savedMinMag = localStorage.getItem('currentMinMagnitude');
+        const savedMaxDist = localStorage.getItem('currentMaxDistance');
+        const savedMaxDepth = localStorage.getItem('currentMaxDepth');
+
+        if (savedMinMag !== null) currentMinMagnitude = parseFloat(savedMinMag);
+        if (savedMaxDist !== null) currentMaxDistance = parseFloat(savedMaxDist);
+        if (savedMaxDepth !== null) currentMaxDepth = parseFloat(savedMaxDepth);
+
+        // Sıralama Ayarları
+        const savedSortBy = localStorage.getItem('currentSortBy');
+        const savedSortOrder = localStorage.getItem('currentSortOrder');
+
+        if (savedSortBy !== null) currentSortBy = savedSortBy;
+        if (savedSortOrder !== null) currentSortOrder = savedSortOrder;
+
+        // Kaynak Ayarı
+        const savedDataSource = localStorage.getItem('currentDataSource');
+        if (savedDataSource !== null) currentDataSource = savedDataSource;
+
+        // ----- UI Elementlerini Yüklenen Ayarlara Göre Güncelle -----
+
+        // Bildirim UI
+        if (enableNotificationsCheckbox) enableNotificationsCheckbox.checked = notificationsEnabled;
+        if (notificationMagnitudeInput) notificationMagnitudeInput.value = minNotificationMagnitude;
+        if (notificationMagnitudeValueSpan) notificationMagnitudeValueSpan.textContent = minNotificationMagnitude.toFixed(1);
+        if (enableDistanceNotificationCheckbox) enableDistanceNotificationCheckbox.checked = notificationDistanceEnabled;
+        if (notificationDistanceInput) {
+            notificationDistanceInput.value = maxNotificationDistance;
+            notificationDistanceInput.disabled = !notificationDistanceEnabled; // Durumu ayarla
+        }
+        if (notificationDistanceValueSpan) notificationDistanceValueSpan.textContent = maxNotificationDistance.toFixed(0);
+        if (notificationDistanceSettingDiv) {
+            notificationDistanceSettingDiv.style.display = notificationDistanceEnabled ? 'block' : 'none';
+        }
+
+        // Filtre UI
+        if (magnitudeFilter) magnitudeFilter.value = currentMinMagnitude;
+        if (magnitudeValueSpan) magnitudeValueSpan.textContent = currentMinMagnitude.toFixed(1);
+        if (distanceFilter) distanceFilter.value = currentMaxDistance;
+        if (distanceValueSpan) distanceValueSpan.textContent = currentMaxDistance >= 1000 ? 'Tümü' : `${currentMaxDistance} km`;
+        if (depthFilter) depthFilter.value = currentMaxDepth;
+        if (depthValueSpan) depthValueSpan.textContent = currentMaxDepth >= 200 ? 'Tümü' : `${currentMaxDepth} km`;
+
+        // Sıralama UI
+        if (sortBySelect) sortBySelect.value = currentSortBy;
+        if (sortOrderSelect) sortOrderSelect.value = currentSortOrder;
+        // Sıralama etiketleri handleSortChange ile ayarlanacak (DOMContentLoaded sonunda çağrılır)
+
+        // Kaynak UI
+        sourceRadios.forEach(radio => {
+            if (radio.value === currentDataSource) {
+                radio.checked = true;
+            }
+        });
+        toggleDatePickerVisibility(); // Kaynak yüklendikten sonra tarih seçici görünürlüğünü ayarla
+
+        // console.log('Ayarlar yüklendi.');
+
+    } catch (e) {
+        console.error("'LocalStorage'dan ayarlar okunamadı:", e);
+    }
+}
 
 // Harita Başlatma Fonksiyonu
 function initializeMap() {
@@ -113,6 +242,11 @@ function toggleTheme() {
     }
     localStorage.setItem('theme', currentTheme);
     applyTheme(currentTheme);
+
+    // Harita katmanını da güncelle
+    if (typeof updateMapTileLayer === 'function') {
+        updateMapTileLayer(currentTheme === 'dark');
+    }
 }
 
 // Grafik Başlatma Fonksiyonu
@@ -230,21 +364,6 @@ function updateChart(earthquakes) {
     earthquakeChart.update();
 }
 
-// --- Yardımcı Fonksiyonlar ---
-
-// Debounce fonksiyonu
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
 // --- Sayfa Yükleme ve Olay Dinleyicileri ---
 document.addEventListener('DOMContentLoaded', () => {
     const savedTheme = localStorage.getItem('theme');
@@ -295,7 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 3. Bildirim Ayarlarını Yükle ve Dinleyicileri Ekle
-    loadNotificationSettings();
+    loadSettings();
     checkNotificationSupportAndStatus();
 
     if (notificationPermissionButton) {
@@ -307,7 +426,8 @@ document.addEventListener('DOMContentLoaded', () => {
              if (notificationMagnitudeInput) {
                  notificationMagnitudeInput.disabled = !notificationsEnabled;
              }
-             saveNotificationSettings();
+             saveSettings();
+             updateNotificationButtonState();
          });
     }
     if (notificationMagnitudeInput) {
@@ -318,17 +438,49 @@ document.addEventListener('DOMContentLoaded', () => {
             }
          });
          notificationMagnitudeInput.addEventListener('change', () => {
+             saveSettings();
              saveNotificationSettings();
          });
      }
 
-    // 4. Arayüz Hazır Olduktan Sonra Konumu Al ve Veri Çek
-    getUserLocation(); // Artık map/chart hazır olmalı
-    fetchEarthquakes(); // Artık map/chart hazır olmalı
+    // Yeni Mesafe Bildirim Ayarları için Dinleyiciler
+    if (enableDistanceNotificationCheckbox) {
+        enableDistanceNotificationCheckbox.addEventListener('change', (e) => {
+            notificationDistanceEnabled = e.target.checked;
+            if (notificationDistanceSettingDiv) {
+                notificationDistanceSettingDiv.style.display = notificationDistanceEnabled ? 'block' : 'none';
+            }
+            if (notificationDistanceInput) {
+                notificationDistanceInput.disabled = !notificationDistanceEnabled; // Checkbox işaretli değilse range'i disable et
+            }
+            saveNotificationSettings();
+        });
+    }
+    if (notificationDistanceInput) {
+        notificationDistanceInput.addEventListener('input', (e) => {
+            maxNotificationDistance = parseFloat(e.target.value);
+            if (notificationDistanceValueSpan) {
+                notificationDistanceValueSpan.textContent = maxNotificationDistance.toFixed(0); // Tam sayı gösterelim
+            }
+        });
+        notificationDistanceInput.addEventListener('change', () => {
+            saveNotificationSettings(); // Değer değişimi bitince kaydet
+        });
+    }
 
-    // Yükleniyor/Hata göstergelerini fetchEarthquakes yönetecek
-    // loadingIndicator.style.display = 'none'; // DOMContentLoaded içinde gizlemeye gerek yok
-    // errorContainer.style.display = 'none'; // DOMContentLoaded içinde gizlemeye gerek yok
+    // Veri İndirme Butonları
+    if (downloadCsvButton) {
+        downloadCsvButton.addEventListener('click', downloadDataAsCSV);
+    }
+    if (downloadJsonButton) {
+        downloadJsonButton.addEventListener('click', downloadDataAsJSON);
+    }
+
+    // 4. Arayüz Hazır Olduktan Sonra Konumu Al ve Veri Çek
+    // İlk kontrolleri çalıştır ve veriyi çek
+    handleSortChange(); // Başlangıç sıralama etiketlerini ayarla
+    toggleDatePickerVisibility(); // Başlangıçta tarih seçici görünürlüğünü ayarla
+    fetchEarthquakes(); // Başlangıç verisini çek (konum da içinde alınacak)
 });
 
 // Tarih Seçicinin Görünürlüğünü Ayarla
@@ -352,6 +504,7 @@ function handleSourceChange(event) {
     currentDataSource = event.target.value;
     console.log('Veri Kaynağı Değiştirildi:', currentDataSource);
     toggleDatePickerVisibility();
+    saveSettings(); // Ayarı kaydet
     allEarthquakes = [];
     fetchEarthquakes();
 }
@@ -360,6 +513,7 @@ function handleSourceChange(event) {
 function handleDateChange(event) {
     currentDate = event.target.value; // YYYY-MM-DD formatında
     console.log('Tarih Değiştirildi:', currentDate);
+    // Tarih değişikliği ayar olarak kaydedilmez, sadece veri çekmeyi tetikler
     allEarthquakes = [];
     fetchEarthquakes();
 }
@@ -370,6 +524,7 @@ function handleFilterChange(event) {
     if (!event || !event.target || !magnitudeValueSpan) return;
     currentMinMagnitude = parseFloat(event.target.value);
     magnitudeValueSpan.textContent = currentMinMagnitude.toFixed(1);
+    saveSettings(); // Ayarı kaydet
     // Filtrelemeyi debounce ile uygula
     debouncedFilterAndDisplay();
 }
@@ -380,8 +535,19 @@ function handleDistanceFilterChange(event) {
     if (!event || !event.target || !distanceValueSpan) return;
     currentMaxDistance = parseFloat(event.target.value);
     distanceValueSpan.textContent = currentMaxDistance >= 1000 ? 'Tümü' : `${currentMaxDistance} km`;
+     saveSettings(); // Ayarı kaydet
      // Filtrelemeyi debounce ile uygula
      debouncedFilterAndDisplay();
+}
+
+// Derinlik Filtresi Değişikliğini Yönet
+function handleDepthFilterChange(event) {
+    if (!event || !event.target || !depthValueSpan) return;
+    currentMaxDepth = parseFloat(event.target.value);
+    depthValueSpan.textContent = currentMaxDepth >= 200 ? 'Tümü' : `${currentMaxDepth} km`;
+    saveSettings(); // Ayarı kaydet
+    // Filtrelemeyi debounce ile uygula
+    debouncedFilterAndDisplay();
 }
 
 // Sıralama Değişikliğini Yönet
@@ -390,14 +556,34 @@ function handleSortChange() {
     if (!sortBySelect || !sortOrderSelect) return;
     currentSortBy = sortBySelect.value;
     currentSortOrder = sortOrderSelect.value;
-    // Sıralama yönü etiketini güncelle (Tarih için)
-    if (currentSortBy === 'date') {
-        sortOrderSelect.options[0].text = 'En Yeni';
-        sortOrderSelect.options[1].text = 'En Eski';
-    } else {
-        sortOrderSelect.options[0].text = 'En Büyük';
-        sortOrderSelect.options[1].text = 'En Küçük';
+    saveSettings(); // Ayarı kaydet
+
+    // Sıralama yönü etiketini kritere göre güncelle
+    let descText = "Azalan";
+    let ascText = "Artan";
+
+    switch (currentSortBy) {
+        case 'date':
+            descText = 'En Yeni';
+            ascText = 'En Eski';
+            break;
+        case 'magnitude':
+            descText = 'En Büyük';
+            ascText = 'En Küçük';
+            break;
+        case 'depth':
+            descText = 'En Derin';
+            ascText = 'En Sığ';
+            break;
+        case 'distance':
+            descText = 'En Uzak';
+            ascText = 'En Yakın';
+            break;
     }
+
+    sortOrderSelect.options[0].text = descText; // desc için
+    sortOrderSelect.options[1].text = ascText;  // asc için
+
     // Sıralama anında uygulanır, debounce'a gerek yok
     filterAndDisplayData();
 }
@@ -407,46 +593,74 @@ function filterAndDisplayData() {
     // 1. Büyüklük Filtrele
     let processedEarthquakes = allEarthquakes.filter(eq => (getMagnitude(eq) || 0) >= currentMinMagnitude);
 
-    // 2. Mesafe Filtrele
-    if (userLocation && currentMaxDistance < 1000) { // Mesafe filtresi aktifse
+    // 2. Derinlik Filtrele (Maksimum derinlik)
+    if (currentMaxDepth < 200) { // Derinlik filtresi aktifse (Tümü değilse)
         processedEarthquakes = processedEarthquakes.filter(eq => {
-            const coords = getCoordinates(eq);
-            if (coords) {
-                const distance = calculateDistance(userLocation.latitude, userLocation.longitude, coords.lat, coords.lon);
-                eq.calculated_distance = distance; // Mesafeyi ata
-                return distance !== null && distance <= currentMaxDistance; // Null değilse ve filtreden geçiyorsa
-            } else {
-                eq.calculated_distance = null; // Hesaplama yapılamıyor
-                return false; // Filtreden çıkarma (mesafe bilinmiyor)
-            }
+            const depth = getDepth(eq);
+            // Derinlik bilgisi varsa ve filtreden geçiyorsa tut
+            return depth !== null && !isNaN(depth) && depth <= currentMaxDepth;
         });
-    } else { // Mesafe filtresi aktif DEĞİLSE veya konum YOKSA
-        // Filtre aktif olmasa bile mesafeyi hesapla ve ekle (gösterim için)
-        processedEarthquakes.forEach(eq => {
-            const coords = getCoordinates(eq);
-            if (userLocation && coords) { // Konum ve koordinat varsa
-                eq.calculated_distance = calculateDistance(userLocation.latitude, userLocation.longitude, coords.lat, coords.lon);
-            } else { // Konum veya koordinat yoksa
-                eq.calculated_distance = null; // Mesafeyi null yap
-            }
-        });
-        // Bu durumda mesafe filtresi uygulanmıyor, sadece bilgi ekleniyor.
     }
 
-    // 3. Sırala
+    // 3. Mesafe Hesapla ve Filtrele
+    processedEarthquakes.forEach(eq => {
+        const coords = getCoordinates(eq);
+        if (userLocation && coords) { // Konum ve koordinat varsa
+            eq.calculated_distance = calculateDistance(userLocation.latitude, userLocation.longitude, coords.lat, coords.lon);
+        } else { // Konum veya koordinat yoksa
+            eq.calculated_distance = null; // Mesafeyi null yap
+        }
+    });
+
+    if (userLocation && currentMaxDistance < 1000) { // Mesafe filtresi aktifse
+        processedEarthquakes = processedEarthquakes.filter(eq => {
+            // calculated_distance zaten yukarıda hesaplandı
+            return eq.calculated_distance !== null && eq.calculated_distance <= currentMaxDistance;
+        });
+    }
+
+    // 4. Sırala
     processedEarthquakes.sort((a, b) => {
         let comparison = 0;
-        if (currentSortBy === 'magnitude') {
-            comparison = (getMagnitude(a) || 0) - (getMagnitude(b) || 0);
-        } else { // date
-            comparison = (getTimestamp(a) || 0) - (getTimestamp(b) || 0);
+        let valA, valB;
+
+        switch (currentSortBy) {
+            case 'magnitude':
+                valA = getMagnitude(a) || 0;
+                valB = getMagnitude(b) || 0;
+                comparison = valA - valB;
+                break;
+            case 'depth':
+                valA = getDepth(a);
+                valB = getDepth(b);
+                // Null/geçersiz değerleri sona at
+                if (valA === null || isNaN(valA)) return 1;
+                if (valB === null || isNaN(valB)) return -1;
+                comparison = valA - valB;
+                break;
+            case 'distance':
+                valA = a.calculated_distance;
+                valB = b.calculated_distance;
+                // Null mesafeleri sona at
+                if (valA === null) return 1;
+                if (valB === null) return -1;
+                comparison = valA - valB;
+                break;
+            default: // date (veya bilinmeyen)
+                valA = getTimestamp(a) || 0;
+                valB = getTimestamp(b) || 0;
+                comparison = valA - valB;
+                break;
         }
+
         return currentSortOrder === 'desc' ? comparison * -1 : comparison;
     });
 
     displayEarthquakes(processedEarthquakes);
     updateMapMarkers(processedEarthquakes);
     updateChart(processedEarthquakes);
+
+    processedEarthquakesForDownload = processedEarthquakes; // Sonucu global değişkende tut
 }
 
 // Debounce edilmiş filtreleme fonksiyonu (300ms gecikme)
@@ -679,11 +893,30 @@ async function fetchEarthquakes() {
                  newEarthquakes.sort((a, b) => getTimestamp(b) - getTimestamp(a));
                 newEarthquakes.forEach(eq => {
                     const magnitude = getMagnitude(eq);
+                    // 1. Büyüklük kontrolü
                     if (magnitude >= minNotificationMagnitude) {
-                        const title = `${magnitude.toFixed(1)} Büyüklüğünde Yeni Deprem`;
-                        const body = `${getLocationTitle(eq)}`;
-                        showNotification(title, body);
-                        console.log(`Yeni Deprem Bildirimi (Min ${minNotificationMagnitude.toFixed(1)}):`, title);
+                        let shouldNotify = true;
+                        // 2. Mesafe kontrolü (eğer aktifse ve konum varsa)
+                        if (notificationDistanceEnabled && userLocation) {
+                            const coords = getCoordinates(eq);
+                            if (coords) {
+                                const distance = calculateDistance(userLocation.latitude, userLocation.longitude, coords.lat, coords.lon);
+                                // Mesafe hesaplanabildiyse ve ayar limitinin altındaysa devam et, değilse bildirme
+                                if (distance === null || distance > maxNotificationDistance) {
+                                    shouldNotify = false;
+                                }
+                            } else {
+                                shouldNotify = false; // Koordinat yoksa bildirme (mesafe filtresi aktifken)
+                            }
+                        }
+
+                        // 3. Bildirimi gönder (eğer tüm kontrollerden geçtiyse)
+                        if (shouldNotify) {
+                            const title = `${magnitude.toFixed(1)} Büyüklüğünde Yeni Deprem`;
+                            const body = `${getLocationTitle(eq)}`;
+                            showNotification(title, body);
+                            console.log(`Yeni Deprem Bildirimi (Min ${minNotificationMagnitude.toFixed(1)}${notificationDistanceEnabled && userLocation ? `, Maks ${maxNotificationDistance}km` : ''}):`, title);
+                        }
                     }
                 });
             }
@@ -859,62 +1092,73 @@ function displayEarthquakes(earthquakes) {
 
 // Harita İşaretçilerini Güncelleme Fonksiyonu
 function updateMapMarkers(earthquakes) {
+    // Harita veya katman grubu hazır değilse işlem yapma (zamanlama sorununu önle)
     if (!map || !earthquakeLayerGroup) {
-        // Harita veya grup henüz hazır değilse işlemi erteleyebilir veya uyarı verebiliriz.
-        // Bu noktada DOMContentLoaded sıralamasını düzelttiğimiz için buraya düşmemesi gerekir.
-         console.warn('updateMapMarkers çağrıldı ancak harita veya katman grubu hazır değil.');
+        console.warn('updateMapMarkers çağrıldı ancak harita veya katman grubu hazır değil.');
         return;
     }
 
-    earthquakeLayerGroup.clearLayers();
-    earthquakeMarkers = {}; // Eski işaretçi referanslarını temizle
+    // console.log(`Haritayı güncellemek için ${earthquakes.length} deprem işleniyor.`);
+    earthquakeLayerGroup.clearLayers(); // Önceki işaretçileri temizle
 
-    const markers = [];
-    earthquakes.forEach((eq, index) => {
+    // Mevcut işaretçileri temizle (alternatif)
+    // Object.values(earthquakeMarkers).forEach(marker => marker.remove());
+    // earthquakeMarkers = {};
+
+    earthquakes.forEach(eq => {
         const coords = getCoordinates(eq);
-        if (coords) {
-            const lat = coords.lat;
-            const lon = coords.lon;
-            const mag = getMagnitude(eq) || 0;
-            const depth = getDepth(eq); // Derinlik bilgisini al
-            const dateStr = getDateString(eq); // Tarih bilgisini al
-            const title = getLocationTitle(eq);
-            const eqId = getEarthquakeId(eq, currentDataSource); // ID'yi al (internal_id yerine bu daha tutarlı olabilir)
+        if (!coords) return; // Koordinat yoksa atla
 
-            // Renk ve boyut hesaplama
-            let markerColor = getMagnitudeColor(mag); // Renkleri CSS değişkenlerinden al
-            let markerRadius = 6 + mag * 2.5; // Büyüklükle daha orantılı boyut
+        const mag = getMagnitude(eq);
+        const depth = getDepth(eq);
+        const title = getLocationTitle(eq);
+        const dateStr = getDateString(eq);
+        const eqId = getEarthquakeId(eq, currentDataSource); // Benzersiz ID
 
-             // Popup içeriğini oluştur
-            const popupContent = `
-                <div class="map-popup">
-                    <strong>${title}</strong><br>
-                    Büyüklük: ${mag > 0 ? mag.toFixed(1) : 'N/A'}<br>
-                    Derinlik: ${depth !== null && !isNaN(depth) ? depth.toFixed(1) + ' km' : 'N/A'}<br>
-                    Zaman: ${dateStr || 'N/A'}
-                </div>
-            `;
+        // Dinamik boyut ve renk
+        const radius = 3 + mag * 1.5; // Büyüklüğe göre dinamik yarıçap
+        const color = getMagnitudeColor(mag);
 
-            const marker = L.circleMarker([lat, lon], {
-                    radius: markerRadius,
-                    fillColor: markerColor,
-                    // color: '#000', // Çerçeve rengi (belki temaya göre ayarlanabilir)
-                    color: markerColor, // Çerçeve rengi dolguyla aynı veya biraz koyusu olabilir
-                    weight: 1,
-                    opacity: 1,
-                    fillOpacity: 0.8 // Dolgu opaklığını biraz artır
-                })
-                .bindPopup(popupContent);
+        const marker = L.circleMarker([coords.lat, coords.lon], {
+            radius: radius,
+            fillColor: color,
+            color: "#000",
+            weight: 0.5,
+            opacity: 1,
+            fillOpacity: 0.7
+        });
 
-            markers.push(marker);
-            if(eqId) {
-                 earthquakeMarkers[eqId] = marker;
-            }
+        // Popup içeriği
+        const popupContent = `
+            <b>${title}</b><br>
+            Büyüklük: ${mag.toFixed(1)}<br>
+            Derinlik: ${depth.toFixed(1)} km<br>
+            Tarih: ${dateStr}<br>
+            <button class="details-button" data-earthquake-id="${eqId}">Detayları Gör</button>
+        `;
+        marker.bindPopup(popupContent);
+
+        // İşaretçiyi gruba ekle
+        earthquakeLayerGroup.addLayer(marker);
+        earthquakeMarkers[eqId] = eq; // Detaylar için depremi sakla
+
+    });
+    // console.log(`${earthquakes.length} işaretçi haritaya eklendi.`);
+
+    // İşaretçi detay butonu olay dinleyicisi (delegasyon)
+    map.off('popupopen'); // Önceki dinleyiciyi kaldır
+    map.on('popupopen', function(e) {
+        const detailsButton = e.popup._container.querySelector('.details-button');
+        if (detailsButton) {
+            const eqId = detailsButton.getAttribute('data-earthquake-id');
+            detailsButton.onclick = () => {
+                const selectedEq = earthquakeMarkers[eqId];
+                if (selectedEq) {
+                    openModal(selectedEq);
+                }
+            };
         }
     });
-
-    earthquakeLayerGroup.addLayers(markers);
-    // console.log(`${markers.length} adet işaretçi haritaya eklendi.`);
 }
 
 // Sayfa yüklendiğinde ve her 10 saniyede bir verileri yenile
@@ -988,42 +1232,6 @@ function updateMapTileLayer(isDarkMode) {
     }).addTo(map);
 }
 
-// --- Ayarları Yükleme/Kaydetme ---
-function saveNotificationSettings() {
-    try {
-        localStorage.setItem('notificationsEnabled', JSON.stringify(notificationsEnabled));
-        localStorage.setItem('minNotificationMagnitude', minNotificationMagnitude);
-        // console.log('Bildirim ayarları kaydedildi.');
-    } catch (e) {
-        console.error("'LocalStorage'a bildirim ayarları kaydedilemedi:", e);
-    }
-}
-
-function loadNotificationSettings() {
-    try {
-        const savedEnabled = localStorage.getItem('notificationsEnabled');
-        const savedMagnitude = localStorage.getItem('minNotificationMagnitude');
-
-        if (savedEnabled !== null) {
-            notificationsEnabled = JSON.parse(savedEnabled);
-        }
-        if (savedMagnitude !== null) {
-            minNotificationMagnitude = parseFloat(savedMagnitude);
-        }
-
-        // UI elementlerini yüklenen ayarlara göre güncelle
-        enableNotificationsCheckbox.checked = notificationsEnabled;
-        notificationMagnitudeInput.value = minNotificationMagnitude;
-        notificationMagnitudeValueSpan.textContent = minNotificationMagnitude.toFixed(1);
-
-        // console.log('Bildirim ayarları yüklendi.');
-
-    } catch (e) {
-        console.error("'LocalStorage'dan bildirim ayarları okunamadı:", e);
-        // Hata durumunda varsayılan değerler zaten ayarlı
-    }
-}
-
 // Bildirim desteğini ve durumunu kontrol et, butonu ayarla
 function checkNotificationSupportAndStatus() {
     if (!('Notification' in window)) {
@@ -1039,7 +1247,7 @@ function checkNotificationSupportAndStatus() {
 
 // Bildirim izin butonu durumunu ve ayar alanını güncelle
 function updateNotificationButtonState() {
-    if (!notificationPermissionButton || !notificationMagnitudeInput || !enableNotificationsCheckbox) return;
+    if (!notificationPermissionButton || !notificationMagnitudeInput || !enableNotificationsCheckbox || !enableDistanceNotificationCheckbox) return;
 
     const settingsDisabled = (notificationPermission !== 'granted' || !notificationsEnabled);
     notificationMagnitudeInput.disabled = settingsDisabled;
@@ -1095,5 +1303,105 @@ async function requestNotificationPermission() {
 function showNotification(title, body) {
     if (notificationPermission !== 'granted' || !notificationsEnabled) return;
 
-    new Notification(title, { body: body, icon: './earthquake-icon.png' });
+    new Notification(title, { body: body, icon: 'icons/icon-192x192.png' });
+}
+
+// Service Worker Kaydı
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(registration => {
+        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+      })
+      .catch(err => {
+        console.log('ServiceWorker registration failed: ', err);
+      });
+  });
+} else {
+    console.log('Service workers are not supported.');
+}
+
+// --- Veri İndirme Fonksiyonları ---
+
+// Helper: Veriyi indirmek için link oluşturma
+function triggerDownload(filename, content, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// O anki filtrelenmiş/sıralanmış veriyi CSV olarak indirir
+function downloadDataAsCSV() {
+    if (!processedEarthquakesForDownload || processedEarthquakesForDownload.length === 0) {
+        alert('İndirilecek veri bulunamadı.');
+        return;
+    }
+
+    const header = ['Tarih', 'Saat', 'Enlem', 'Boylam', 'Derinlik(km)', 'Büyüklük(ML)', 'Yer', 'Kaynak'];
+    const rows = processedEarthquakesForDownload.map(eq => {
+        const coords = getCoordinates(eq);
+        const dateStr = getDateString(eq) || ' '; // Boşluk bırakırsak ayırma kolaylaşır
+        const dateParts = dateStr.split(' ');
+        const tarih = dateParts[0] || '';
+        const saat = dateParts[1] || '';
+        const lat = coords ? coords.lat?.toFixed(4) : '';
+        const lon = coords ? coords.lon?.toFixed(4) : '';
+        const depth = getDepth(eq);
+        const mag = getMagnitude(eq);
+        // CSV'de virgül sorun yaratabilir, yer bilgisini çift tırnak içine alalım
+        const location = getLocationTitle(eq).replace(/"/g, '""'); // Çift tırnağı escape et
+
+        return [
+            tarih,
+            saat,
+            lat,
+            lon,
+            (depth !== null && !isNaN(depth)) ? depth.toFixed(1) : '',
+            (mag !== null && !isNaN(mag)) ? mag.toFixed(1) : '',
+            `"${location}"`,
+            currentDataSource // O an seçili olan kaynak
+        ];
+    });
+
+    // Başlık ve satırları birleştir
+    let csvContent = header.join(',') + '\n';
+    rows.forEach(row => {
+        csvContent += row.join(',') + '\n';
+    });
+
+    const timestamp = new Date().toISOString().slice(0, 10);
+    triggerDownload(`depremler_${timestamp}.csv`, csvContent, 'text/csv;charset=utf-8;');
+}
+
+// O anki filtrelenmiş/sıralanmış veriyi JSON olarak indirir
+function downloadDataAsJSON() {
+    if (!processedEarthquakesForDownload || processedEarthquakesForDownload.length === 0) {
+        alert('İndirilecek veri bulunamadı.');
+        return;
+    }
+
+    // Ham veriyi değil, işlenmiş ve okunabilir veriyi indirelim
+    const jsonData = processedEarthquakesForDownload.map(eq => {
+        const coords = getCoordinates(eq);
+        return {
+            tarih_saat: getDateString(eq),
+            enlem: coords ? coords.lat?.toFixed(4) : null,
+            boylam: coords ? coords.lon?.toFixed(4) : null,
+            derinlik_km: getDepth(eq),
+            buyukluk_ml: getMagnitude(eq),
+            yer: getLocationTitle(eq),
+            kaynak: currentDataSource,
+            timestamp_unix: getTimestamp(eq) // Orijinal timestamp
+        };
+    });
+
+    const jsonContent = JSON.stringify(jsonData, null, 2); // Güzelleştirilmiş JSON
+    const timestamp = new Date().toISOString().slice(0, 10);
+    triggerDownload(`depremler_${timestamp}.json`, jsonContent, 'application/json;charset=utf-8;');
 } 
