@@ -250,24 +250,39 @@ function toggleTheme() {
     localStorage.setItem('theme', currentTheme);
     applyTheme(currentTheme);
 
-    // Harita katmanını da güncelle
-    if (typeof updateMapTileLayer === 'function') {
-        updateMapTileLayer(currentTheme === 'dark');
-    }
+    // Tema değiştiğinde grafiği yeni renklerle tekrar çiz ve veriyi yükle
+    // Ufak bir gecikme ekleyerek tarayıcının CSS değişkenlerini güncellemesini bekle
+    setTimeout(() => {
+        if (typeof initializeChart === 'function' && typeof updateChart === 'function') {
+            initializeChart(); // Grafiği yeni tema renkleriyle yeniden başlatır
+            // processedEarthquakesForDownload global değişkeninde o anki filtrelenmiş veri tutuluyor
+            if (processedEarthquakesForDownload) {
+                 updateChart(processedEarthquakesForDownload); // Grafiği mevcut veriyle doldur
+            }
+            console.log('Grafik teması (gecikmeli) güncellendi.');
+        }
+    }, 10); // 10 milisaniye gecikme
+
+    // Harita katmanını güncelleme (Artık Leaflet Layers Control ile yapılıyor, bu satır kaldırılabilir)
+    // if (typeof updateMapTileLayer === 'function') {
+    //     updateMapTileLayer(currentTheme === 'dark');
+    // }
 }
 
 // Grafik Başlatma Fonksiyonu
 function initializeChart() {
     if (earthquakeChart) earthquakeChart.destroy(); // Varsa eski grafiği yok et
 
-    // CSS değişkenlerinden renkleri al
-    const style = getComputedStyle(document.documentElement);
-    const lineColor = style.getPropertyValue('--chart-line-color').trim() || '#dc3545';
-    const bgColor = style.getPropertyValue('--chart-bg-color').trim() || 'rgba(220, 53, 69, 0.1)';
-    const gridColor = style.getPropertyValue('--chart-grid-color').trim() || 'rgba(0, 0, 0, 0.05)'; // Yeni grid rengi değişkeni
-    const textColor = style.getPropertyValue('--text-color').trim() || '#333';
-    const tooltipBgColor = style.getPropertyValue('--container-bg-color').trim() || '#fff';
-    const fontFamily = style.getPropertyValue('font-family') || 'Inter, sans-serif'; // Fontu da alalım
+    // Tema kontrolü
+    const isDarkMode = document.body.classList.contains('dark-theme');
+
+    // Renkleri temaya göre doğrudan ata
+    const lineColor = isDarkMode ? '#f06571' : '#dc3545'; // Koyu tema: Açık Kırmızı, Açık tema: Koyu Kırmızı
+    const bgColor = isDarkMode ? 'rgba(240, 101, 113, 0.15)' : 'rgba(220, 53, 69, 0.08)';
+    const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)';
+    const textColor = isDarkMode ? '#f8f9fa' : '#212529'; // Koyu tema: Açık Gri, Açık tema: Koyu Gri
+    const tooltipBgColor = isDarkMode ? '#343a40' : '#ffffff'; // Koyu: Koyu Gri, Açık: Beyaz
+    const fontFamily = getComputedStyle(document.documentElement).getPropertyValue('font-family').trim() || 'Inter, sans-serif'; // Fontu CSS'den alabiliriz
 
     earthquakeChart = new Chart(chartCanvas, {
         type: 'line',
@@ -278,50 +293,48 @@ function initializeChart() {
                 data: [],
                 borderColor: lineColor,
                 backgroundColor: bgColor,
-                borderWidth: 2, // Biraz daha kalın çizgi
-                tension: 0.3, // Daha yumuşak eğim
-                pointRadius: 0, // Noktaları normalde gizle
+                borderWidth: 2,
+                tension: 0.3,
+                pointRadius: 0,
                 pointBackgroundColor: lineColor,
                 pointBorderColor: lineColor,
-                pointHoverRadius: 5, // Hover'da göster
-                pointHoverBackgroundColor: tooltipBgColor, // Hover nokta içi
-                pointHoverBorderColor: lineColor, // Hover nokta çerçevesi
+                pointHoverRadius: 5,
+                pointHoverBackgroundColor: tooltipBgColor, // tooltipBgColor kullan
+                pointHoverBorderColor: lineColor,
                 pointHoverBorderWidth: 2,
-                fill: true // Alanı doldur
+                fill: true
             }]
         },
         options: {
             scales: {
                 y: {
                     beginAtZero: true,
-                    border: { display: false }, // Eksen çizgisini kaldır
+                    border: { display: false },
                     grid: {
-                        color: gridColor, // Daha soluk grid
-                        // drawBorder: false,
+                        color: gridColor, // Doğrudan atanan renk
                     },
                     ticks: {
-                         color: textColor,
+                         color: textColor, // Doğrudan atanan renk
                          font: { family: fontFamily }
                     }
                 },
                 x: {
-                    border: { display: false }, // Eksen çizgisini kaldır
+                    border: { display: false },
                     grid: {
-                         color: gridColor, // Daha soluk grid
-                         // drawBorder: false,
+                         color: gridColor, // Doğrudan atanan renk
                     },
                      ticks: {
-                         color: textColor,
+                         color: textColor, // Doğrudan atanan renk
                          font: { family: fontFamily },
-                         maxRotation: 0, // Etiketleri döndürme
-                         autoSkip: true, // Otomatik atlama
-                         maxTicksLimit: 7 // Maksimum etiket sayısı
+                         maxRotation: 0,
+                         autoSkip: true,
+                         maxTicksLimit: 7
                     }
                 }
             },
             responsive: true,
             maintainAspectRatio: false,
-            interaction: { // Hover ve tooltip etkileşimleri
+            interaction: {
                  mode: 'index',
                  intersect: false,
             },
@@ -329,16 +342,16 @@ function initializeChart() {
                 legend: { display: false },
                 tooltip: {
                     enabled: true,
-                    backgroundColor: tooltipBgColor,
-                    titleColor: textColor,
-                    bodyColor: textColor,
-                    borderColor: gridColor,
+                    backgroundColor: tooltipBgColor, // Doğrudan atanan renk
+                    titleColor: textColor, // Doğrudan atanan renk
+                    bodyColor: textColor, // Doğrudan atanan renk
+                    borderColor: gridColor, // Doğrudan atanan renk
                     borderWidth: 1,
-                    padding: 10, // İç boşluk
-                    caretPadding: 10, // Ok ile kutu arası boşluk
-                    caretSize: 6, // Ok boyutu
-                    cornerRadius: 6, // Köşe yuvarlaklığı (Sabit değer veya JS ile hesapla)
-                    usePointStyle: true, // Nokta stilini kullan (legend için)
+                    padding: 10,
+                    caretPadding: 10,
+                    caretSize: 6,
+                    cornerRadius: 6,
+                    usePointStyle: true,
                     boxPadding: 3,
                     titleFont: { family: fontFamily, weight: '600' },
                     bodyFont: { family: fontFamily },
@@ -420,10 +433,68 @@ document.addEventListener('DOMContentLoaded', () => {
         currentSortOrder = sortOrderSelect.value;
     }
 
-    // 3. Bildirim Ayarları: Durumu kontrol et, ayarları YÜKLE, sonra UI'ı GÜNCELLE
-    checkNotificationSupportAndStatus(); // notificationPermission set edilir
-    loadSettings(); // Ayarlar yüklenir (notificationsEnabled vs.)
-    updateNotificationSettingsUIState(); // Yüklenen ayarlar ve izin durumu ile UI güncellenir
+    // 3. Bildirim Ayarları: Durumu kontrol et, İZİN İSTE (gerekirse), ayarları YÜKLE, sonra UI'ı GÜNCELLE
+    const notificationSupported = checkNotificationSupportAndStatus(); // notificationPermission set edilir
+
+    // Sayfa yüklenince izin durumu 'default' ise ve tarayıcı destekliyorsa hemen iste
+    if (notificationSupported && notificationPermission === 'default') {
+        console.log('Sayfa yüklendi, bildirim izni \'default\'. İzin isteniyor...');
+        // requestNotificationPermission asenkron çalışır ve kendi içinde UI'ı günceller.
+        // Burada await etmeye gerek yok, sonraki UI güncellemesi zaten durumu yansıtacak.
+        requestNotificationPermission();
+    }
+
+    loadSettings(); // Ayarlar her zaman yüklenir (notificationsEnabled vs.)
+    updateNotificationSettingsUIState(); // Yüklenen ayarlar ve (muhtemelen güncellenmiş) izin durumu ile UI güncellenir
+
+    // --- Yeni Buton Listener'ları (UI güncellendikten sonra) ---
+    if (toggleNotificationsBtn) {
+        toggleNotificationsBtn.addEventListener('click', async () => {
+            if (notificationPermission === 'denied') {
+                alert('Tarayıcı ayarlarından bildirim izinlerini değiştirmeniz gerekiyor.');
+                return;
+            }
+
+            notificationsEnabled = !notificationsEnabled;
+            // toggleNotificationsBtn.classList.toggle('active', notificationsEnabled); // -> Bu satır kaldırıldı, updateUI yönetecek
+
+            console.log(`Button Clicked: notificationsEnabled=${notificationsEnabled}, notificationPermission='${notificationPermission}'`);
+
+            if (notificationsEnabled && notificationPermission === 'default') {
+                console.log('İzin isteme koşulu sağlandı. requestNotificationPermission çağrılıyor...');
+                await requestNotificationPermission();
+            } else {
+                // Eğer izin zaten verilmişse veya kapatılıyorsa, sadece UI'ı ve ayarı güncelle
+                saveSettings();
+                updateNotificationSettingsUIState();
+            }
+        });
+    }
+    if (toggleNearbyOnlyBtn) {
+        toggleNearbyOnlyBtn.addEventListener('click', () => {
+            notificationDistanceEnabled = !notificationDistanceEnabled;
+            // toggleNearbyOnlyBtn.classList.toggle('active', notificationDistanceEnabled); // -> Bu satır kaldırıldı, updateUI yönetecek
+            saveSettings();
+            updateNotificationSettingsUIState(); // Mesafe slider'ını göster/gizle
+        });
+    }
+    if (notificationMagnitudeInput) {
+        notificationMagnitudeInput.addEventListener('input', (e) => {
+            minNotificationMagnitude = parseFloat(e.target.value);
+            if(notificationMagnitudeValueSpan) notificationMagnitudeValueSpan.textContent = minNotificationMagnitude.toFixed(1);
+            saveSettings();
+            // Yeniden filtrelemeye gerek yok, sadece bildirimleri etkiler
+        });
+    }
+    if (notificationDistanceInput) {
+        notificationDistanceInput.addEventListener('input', (e) => {
+            maxNotificationDistance = parseFloat(e.target.value);
+            if(notificationDistanceValueSpan) notificationDistanceValueSpan.textContent = maxNotificationDistance.toFixed(0);
+            saveSettings();
+            // Yeniden filtrelemeye gerek yok, sadece bildirimleri etkiler
+        });
+    }
+    // -------
 
     // 4. Arayüz Hazır Olduktan Sonra Konumu Al ve Veri Çek
     handleSortChange();
