@@ -28,69 +28,85 @@
         <button id="theme-toggle">Tema Değiştir</button>
         <h1>Son Depremler</h1>
 
-        <!-- Filtreleme Alanı -->
+        <!-- Filtreleme Alanı - Yeniden Yapılandırıldı (2 Sütun) -->
         <div class="controls-container">
-            <div class="source-container"> <!-- Kaynak Seçimi -->
-                <label>Kaynak:</label>
-                <label><input type="radio" name="source" value="kandilli" checked> Kandilli</label>
-                <label><input type="radio" name="source" value="afad"> AFAD</label>
+
+            <!-- Sol Sütun -->
+            <div class="control-column left">
+                <div class="source-container">
+                    <input type="radio" name="source" value="kandilli" id="source-kandilli" checked>
+                    <label for="source-kandilli">Kandilli</label>
+                    <input type="radio" name="source" value="afad" id="source-afad">
+                    <label for="source-afad">AFAD</label>
+                </div>
+                <div class="sort-container">
+                    <div>
+                        <label for="sort-by">Sırala:</label>
+                        <select id="sort-by" name="sort-by">
+                            <option value="date">Tarih</option>
+                            <option value="magnitude">Büyüklük</option>
+                            <option value="depth">Derinlik</option>
+                            <option value="distance">Mesafe</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="sort-order">Yön:</label>
+                        <select id="sort-order" name="sort-order">
+                            <option value="desc">Azalan</option>
+                            <option value="asc">Artan</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="date-picker-container">
+                    <label for="earthquake-date">Tarih:</label>
+                    <input type="date" id="earthquake-date" name="earthquake-date">
+                </div>
+                <div class="download-container">
+                    <button id="download-csv"><i class="fas fa-file-csv"></i> Veriyi İndir (CSV)</button>
+                    <button id="download-json"><i class="fas fa-file-code"></i> Veriyi İndir (JSON)</button>
+                </div>
             </div>
-            <!-- Tarih Seçici (Sadece Kandilli için) -->
-            <div class="date-picker-container">
-                 <label for="earthquake-date">Tarih:</label>
-                 <input type="date" id="earthquake-date" name="earthquake-date">
+
+            <!-- Sağ Sütun -->
+            <div class="control-column right">
+                <div class="filter-container">
+                    <label for="magnitude-filter">Min Büyüklük: <span id="magnitude-value">1.0</span></label>
+                    <input type="range" id="magnitude-filter" name="magnitude" min="1" max="8" step="0.1" value="1.0">
+                </div>
+                <div class="filter-container">
+                    <label for="distance-filter">Maks Mesafe (km): <span id="distance-value">Tümü</span></label>
+                    <input type="range" id="distance-filter" name="distance" min="0" max="1000" step="10" value="1000">
+                </div>
+                <div class="filter-container">
+                    <label for="depth-filter">Maks Derinlik (km): <span id="depth-value">Tümü</span></label>
+                    <input type="range" id="depth-filter" name="depth" min="0" max="200" step="5" value="200">
+                </div>
+                 <div class="notification-settings">
+                    <!-- Yan yana butonlar için bir sarmalayıcı -->
+                    <div class="notification-buttons">
+                        <button id="toggle-notifications-btn" class="notification-button" data-setting="enable-notifications">Bildirimleri Etkinleştir</button>
+                        <button id="toggle-nearby-only-btn" class="notification-button" data-setting="enable-distance-notification">Sadece Yakındakileri Bildir</button>
+                    </div>
+                    <!-- Kaydırıcılar için ayrı bir sarmalayıcı -->
+                    <div class="notification-sliders">
+                        <div class="notification-magnitude-setting">
+                            <label for="notification-magnitude">Min Bildirim Büyüklüğü:</label>
+                            <div class="range-wrapper">
+                                <input type="range" id="notification-magnitude" min="1.0" max="8.0" step="0.1" value="4.0">
+                                <span id="notification-magnitude-value">4.0</span>
+                            </div>
+                        </div>
+                        <div class="notification-distance-setting" style="display: none;">
+                            <label for="notification-distance">Maks Bildirim Mesafesi (km):</label>
+                            <div class="range-wrapper">
+                                <input type="range" id="notification-distance" min="10" max="500" step="10" value="100">
+                                <span id="notification-distance-value">100</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="filter-container">
-                <label for="magnitude-filter">Min Büyüklük: <span id="magnitude-value">1.0</span></label>
-                <input type="range" id="magnitude-filter" name="magnitude" min="1" max="8" step="0.1" value="1.0">
-            </div>
-            <div class="filter-container"> <!-- Mesafe filtresi -->
-                <label for="distance-filter">Maks Mesafe (km): <span id="distance-value">Tümü</span></label>
-                <input type="range" id="distance-filter" name="distance" min="0" max="1000" step="10" value="1000">
-            </div>
-            <div class="filter-container"> <!-- Derinlik filtresi -->
-                <label for="depth-filter">Maks Derinlik (km): <span id="depth-value">Tümü</span></label>
-                <input type="range" id="depth-filter" name="depth" min="0" max="200" step="5" value="200">
-            </div>
-            <!-- Sıralama Alanı -->
-            <div class="sort-container">
-                 <label for="sort-by">Sırala:</label>
-                 <select id="sort-by" name="sort-by">
-                    <option value="date">Tarih</option>
-                    <option value="magnitude">Büyüklük</option>
-                    <option value="depth">Derinlik</option>
-                    <option value="distance">Mesafe</option>
-                 </select>
-                 <label for="sort-order">Yön:</label>
-                 <select id="sort-order" name="sort-order">
-                    <option value="desc">Azalan</option>
-                    <option value="asc">Artan</option>
-                 </select>
-            </div>
-            <!-- Bildirim İzin Butonu -->
-            <div class="notification-control">
-                 <button id="request-notification-permission">Bildirimlere İzin Ver</button>
-            </div>
-            <!-- Bildirim Ayarları -->
-            <div class="notification-settings">
-                 <label><input type="checkbox" id="enable-notifications" checked> Bildirimleri Etkinleştir</label>
-                 <div> <!-- Range ve span'ı sarmalayan div (CSS ile hizalama için) -->
-                    <label for="notification-magnitude">Min Bildirim Büyüklüğü: </label>
-                    <input type="range" id="notification-magnitude" min="1.0" max="8.0" step="0.1" value="4.0">
-                    <span id="notification-magnitude-value">4.0</span>
-                 </div>
-                 <label><input type="checkbox" id="enable-distance-notification"> Sadece Yakındaki Depremleri Bildir</label>
-                 <div class="notification-distance-setting" style="display: none;"> <!-- Başlangıçta gizli -->
-                     <label for="notification-distance">Maks Bildirim Mesafesi (km): </label>
-                     <input type="range" id="notification-distance" min="10" max="500" step="10" value="100">
-                     <span id="notification-distance-value">100</span>
-                 </div>
-            </div>
-            <!-- Veri İndirme Butonları -->
-            <div class="download-container">
-                <button id="download-csv">Veriyi İndir (CSV)</button>
-                <button id="download-json">Veriyi İndir (JSON)</button>
-            </div>
+
         </div>
 
         <!-- Yükleniyor Göstergesi -->

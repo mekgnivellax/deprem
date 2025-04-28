@@ -19,15 +19,18 @@ const modal = document.getElementById('earthquake-modal'); // Modal
 const modalBody = document.getElementById('modal-body'); // Modal içeriği
 const closeModalButton = document.querySelector('.close-button'); // Kapatma butonu
 const notificationPermissionButton = document.getElementById('request-notification-permission'); // Bildirim izin butonu
-const enableNotificationsCheckbox = document.getElementById('enable-notifications'); // Bildirim etkinleştirme checkbox'ı
+const enableNotificationsCheckbox = document.getElementById('enable-notifications'); // Eski, kaldırılacak?
 const notificationMagnitudeInput = document.getElementById('notification-magnitude'); // Bildirim büyüklük ayarı
 const notificationMagnitudeValueSpan = document.getElementById('notification-magnitude-value'); // Bildirim büyüklük değeri span'ı
-const enableDistanceNotificationCheckbox = document.getElementById('enable-distance-notification'); // Mesafe bildirim checkbox'ı
+const enableDistanceNotificationCheckbox = document.getElementById('enable-distance-notification'); // Eski, kaldırılacak?
 const notificationDistanceSettingDiv = document.querySelector('.notification-distance-setting'); // Mesafe ayar div'i
 const notificationDistanceInput = document.getElementById('notification-distance'); // Mesafe bildirim ayarı
 const notificationDistanceValueSpan = document.getElementById('notification-distance-value'); // Mesafe bildirim değeri span'ı
 const downloadCsvButton = document.getElementById('download-csv'); // CSV İndirme Butonu
 const downloadJsonButton = document.getElementById('download-json'); // JSON İndirme Butonu
+// Yeni Buton Referansları
+const toggleNotificationsBtn = document.getElementById('toggle-notifications-btn');
+const toggleNearbyOnlyBtn = document.getElementById('toggle-nearby-only-btn');
 
 // API URL'leri
 const afadApiUrl = 'https://deprem-api.vercel.app/?type=afad';
@@ -111,6 +114,7 @@ function loadSettings() {
         const savedDistanceEnabled = localStorage.getItem('notificationDistanceEnabled');
         const savedDistance = localStorage.getItem('maxNotificationDistance');
 
+        // Önce değerleri yükle
         if (savedEnabled !== null) notificationsEnabled = JSON.parse(savedEnabled);
         if (savedMagnitude !== null) minNotificationMagnitude = parseFloat(savedMagnitude);
         if (savedDistanceEnabled !== null) notificationDistanceEnabled = JSON.parse(savedDistanceEnabled);
@@ -136,20 +140,23 @@ function loadSettings() {
         const savedDataSource = localStorage.getItem('currentDataSource');
         if (savedDataSource !== null) currentDataSource = savedDataSource;
 
-        // ----- UI Elementlerini Yüklenen Ayarlara Göre Güncelle -----
+        // ----- UI Elementlerini Yüklenen Ayarlara Göre Güncelle ----- 
+        // NOT: Bildirim butonlarının durumu (active/disabled) artık sadece
+        // `updateNotificationSettingsUIState` tarafından yönetilecek.
+        // Bu fonksiyon DOMContentLoaded sonunda çağrılacak ve zaten izin durumunu da biliyor olacak.
 
-        // Bildirim UI
-        if (enableNotificationsCheckbox) enableNotificationsCheckbox.checked = notificationsEnabled;
-        if (notificationMagnitudeInput) notificationMagnitudeInput.value = minNotificationMagnitude;
-        if (notificationMagnitudeValueSpan) notificationMagnitudeValueSpan.textContent = minNotificationMagnitude.toFixed(1);
-        if (enableDistanceNotificationCheckbox) enableDistanceNotificationCheckbox.checked = notificationDistanceEnabled;
-        if (notificationDistanceInput) {
-            notificationDistanceInput.value = maxNotificationDistance;
-            notificationDistanceInput.disabled = !notificationDistanceEnabled; // Durumu ayarla
+        // Bildirim slider değerlerini yükle (durumları updateUI'da ayarlanacak)
+        if (notificationMagnitudeInput) {
+             notificationMagnitudeInput.value = minNotificationMagnitude;
+         }
+        if (notificationMagnitudeValueSpan) {
+            notificationMagnitudeValueSpan.textContent = minNotificationMagnitude.toFixed(1);
         }
-        if (notificationDistanceValueSpan) notificationDistanceValueSpan.textContent = maxNotificationDistance.toFixed(0);
-        if (notificationDistanceSettingDiv) {
-            notificationDistanceSettingDiv.style.display = notificationDistanceEnabled ? 'block' : 'none';
+        if (notificationDistanceInput) {
+             notificationDistanceInput.value = maxNotificationDistance;
+         }
+        if (notificationDistanceValueSpan) {
+            notificationDistanceValueSpan.textContent = maxNotificationDistance.toFixed(0);
         }
 
         // Filtre UI
@@ -163,7 +170,7 @@ function loadSettings() {
         // Sıralama UI
         if (sortBySelect) sortBySelect.value = currentSortBy;
         if (sortOrderSelect) sortOrderSelect.value = currentSortOrder;
-        // Sıralama etiketleri handleSortChange ile ayarlanacak (DOMContentLoaded sonunda çağrılır)
+        // Sıralama etiketleri handleSortChange ile ayarlanacak
 
         // Kaynak UI
         sourceRadios.forEach(radio => {
@@ -171,9 +178,9 @@ function loadSettings() {
                 radio.checked = true;
             }
         });
-        toggleDatePickerVisibility(); // Kaynak yüklendikten sonra tarih seçici görünürlüğünü ayarla
+        // toggleDatePickerVisibility(); // Bu, DOMContentLoaded sonunda çağrılacak
 
-        // console.log('Ayarlar yüklendi.');
+        // console.log('Ayarlar yüklendi, UI güncellemesi DOMContentLoaded sonunda yapılacak.');
 
     } catch (e) {
         console.error("'LocalStorage'dan ayarlar okunamadı:", e);
@@ -383,7 +390,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeMap();
     initializeChart();
 
-    // 2. Kontrolleri Ayarla (Harita/Grafik hazır olduktan sonra)
+    // 2. Kontrolleri Ayarla
     sourceRadios.forEach(radio => {
         if (radio.checked) {
             currentDataSource = radio.value;
@@ -413,74 +420,15 @@ document.addEventListener('DOMContentLoaded', () => {
         currentSortOrder = sortOrderSelect.value;
     }
 
-    // 3. Bildirim Ayarlarını Yükle ve Dinleyicileri Ekle
-    loadSettings();
-    checkNotificationSupportAndStatus();
-
-    if (notificationPermissionButton) {
-        notificationPermissionButton.addEventListener('click', requestNotificationPermission);
-    }
-    if (enableNotificationsCheckbox) {
-        enableNotificationsCheckbox.addEventListener('change', (e) => {
-             notificationsEnabled = e.target.checked;
-             if (notificationMagnitudeInput) {
-                 notificationMagnitudeInput.disabled = !notificationsEnabled;
-             }
-             saveSettings();
-             updateNotificationButtonState();
-         });
-    }
-    if (notificationMagnitudeInput) {
-        notificationMagnitudeInput.addEventListener('input', (e) => {
-            minNotificationMagnitude = parseFloat(e.target.value);
-            if (notificationMagnitudeValueSpan) {
-                notificationMagnitudeValueSpan.textContent = minNotificationMagnitude.toFixed(1);
-            }
-         });
-         notificationMagnitudeInput.addEventListener('change', () => {
-             saveSettings();
-             saveNotificationSettings();
-         });
-     }
-
-    // Yeni Mesafe Bildirim Ayarları için Dinleyiciler
-    if (enableDistanceNotificationCheckbox) {
-        enableDistanceNotificationCheckbox.addEventListener('change', (e) => {
-            notificationDistanceEnabled = e.target.checked;
-            if (notificationDistanceSettingDiv) {
-                notificationDistanceSettingDiv.style.display = notificationDistanceEnabled ? 'block' : 'none';
-            }
-            if (notificationDistanceInput) {
-                notificationDistanceInput.disabled = !notificationDistanceEnabled; // Checkbox işaretli değilse range'i disable et
-            }
-            saveNotificationSettings();
-        });
-    }
-    if (notificationDistanceInput) {
-        notificationDistanceInput.addEventListener('input', (e) => {
-            maxNotificationDistance = parseFloat(e.target.value);
-            if (notificationDistanceValueSpan) {
-                notificationDistanceValueSpan.textContent = maxNotificationDistance.toFixed(0); // Tam sayı gösterelim
-            }
-        });
-        notificationDistanceInput.addEventListener('change', () => {
-            saveNotificationSettings(); // Değer değişimi bitince kaydet
-        });
-    }
-
-    // Veri İndirme Butonları
-    if (downloadCsvButton) {
-        downloadCsvButton.addEventListener('click', downloadDataAsCSV);
-    }
-    if (downloadJsonButton) {
-        downloadJsonButton.addEventListener('click', downloadDataAsJSON);
-    }
+    // 3. Bildirim Ayarları: Durumu kontrol et, ayarları YÜKLE, sonra UI'ı GÜNCELLE
+    checkNotificationSupportAndStatus(); // notificationPermission set edilir
+    loadSettings(); // Ayarlar yüklenir (notificationsEnabled vs.)
+    updateNotificationSettingsUIState(); // Yüklenen ayarlar ve izin durumu ile UI güncellenir
 
     // 4. Arayüz Hazır Olduktan Sonra Konumu Al ve Veri Çek
-    // İlk kontrolleri çalıştır ve veriyi çek
-    handleSortChange(); // Başlangıç sıralama etiketlerini ayarla
-    toggleDatePickerVisibility(); // Başlangıçta tarih seçici görünürlüğünü ayarla
-    fetchEarthquakes(); // Başlangıç verisini çek (konum da içinde alınacak)
+    handleSortChange();
+    toggleDatePickerVisibility();
+    fetchEarthquakes();
 });
 
 // Tarih Seçicinin Görünürlüğünü Ayarla
@@ -702,8 +650,40 @@ function getDepth(eq) {
 }
 
 function getDateString(eq) {
-    // İkisi de eq.date kullanıyor gibi
-    return eq.date || '-';
+    const dateStr = eq.date; // API'den gelen tarih (YYYY-MM-DD veya YYYY.MM.DD olabilir)
+    if (!dateStr || typeof dateStr !== 'string') return '-';
+
+    try {
+        const parts = dateStr.split(' ');
+        if (parts.length !== 2) throw new Error('Beklenmeyen tarih/saat formatı');
+
+        const datePart = parts[0]; // YYYY-MM-DD veya YYYY.MM.DD
+        const timePart = parts[1]; // HH:MM:SS
+
+        // Hem '-' hem de '.' ayracını dene
+        let dateComponents = datePart.split('-');
+        if (dateComponents.length !== 3) {
+            dateComponents = datePart.split('.'); // Eğer '-' ile bölünmediyse '.' ile dene
+        }
+
+        if (dateComponents.length !== 3) throw new Error('Beklenmeyen tarih bileşenleri ayracı');
+
+        const year = dateComponents[0];
+        const month = dateComponents[1];
+        const day = dateComponents[2];
+
+        // Yılın 4 haneli olduğunu varsayalım (güvenlik kontrolü eklenebilir)
+        if (year.length !== 4 || month.length !== 2 || day.length !== 2) {
+             console.warn(`Beklenmeyen tarih bileşen uzunlukları: ${datePart}`);
+             // Yine de formatlamayı dene?
+        }
+
+        // Yeni formatı oluştur: GG/AA/YYYY SS:DD:ss
+        return `${day}/${month}/${year} ${timePart}`;
+    } catch (error) {
+        console.warn(`Tarih formatlanamadı (${dateStr}):`, error);
+        return dateStr; // Hata durumunda orijinal string'i döndür
+    }
 }
 
 function getEarthquakeId(eq, source) {
@@ -829,7 +809,7 @@ async function fetchEarthquakes() {
     if (currentDataSource === 'kandilli') {
         isOrhanAydAPI = true;
         if (currentDate) {
-            apiUrl = `${kandilliArchiveBaseUrl}/${currentDate}`;
+            apiUrl = `${kandilliArchiveBaseUrl}?date=${currentDate}`;
         } else {
             apiUrl = kandilliLiveApiUrl;
         }
@@ -1176,7 +1156,26 @@ function openModal(earthquake) {
     const depth = getDepth(earthquake) || 0;
     const location = getLocationTitle(earthquake) || 'N/A';
     const timestamp = getTimestamp(earthquake);
-    const formattedDate = timestamp ? new Date(timestamp).toLocaleString() : 'N/A';
+
+    // Tarih formatlama
+    let formattedDate = 'N/A';
+    if (timestamp) {
+        try {
+            const dateObj = new Date(timestamp * 1000); // Unix timestamp saniye cinsinden, ms'ye çevir
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0'); // Aylar 0'dan başlar
+            const year = dateObj.getFullYear();
+            const hours = String(dateObj.getHours()).padStart(2, '0');
+            const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+            const seconds = String(dateObj.getSeconds()).padStart(2, '0');
+            formattedDate = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+        } catch (error) {
+            console.warn(`Modal için tarih formatlanamadı: ${timestamp}`, error);
+            // Hata olursa orijinal getDateString'i kullanmayı deneyebiliriz?
+            formattedDate = getDateString(earthquake) || 'Hata';
+        }
+    }
+
     const coordinates = getCoordinates(earthquake);
     const lat = coordinates ? coordinates.lat?.toFixed(4) : 'N/A';
     const lon = coordinates ? coordinates.lon?.toFixed(4) : 'N/A';
@@ -1232,78 +1231,140 @@ function updateMapTileLayer(isDarkMode) {
     }).addTo(map);
 }
 
-// Bildirim desteğini ve durumunu kontrol et, butonu ayarla
+// Bildirim desteğini ve durumunu kontrol et ve UI durumunu ayarla
 function checkNotificationSupportAndStatus() {
     if (!('Notification' in window)) {
         console.warn('Tarayıcı bildirimleri desteklemiyor.');
-        notificationPermissionButton.textContent = 'Bildirimler Desteklenmiyor';
-        notificationPermissionButton.disabled = true;
-        return;
+        // Buton ve ayarların durumu updateUI tarafından yönetilecek
+        notificationPermission = 'denied'; // Desteklenmiyorsa reddedilmiş gibi davranalım?
+        // updateNotificationSettingsUIState(); // Bu çağrıyı kaldırıyoruz
+        return false;
     }
 
     notificationPermission = Notification.permission;
-    updateNotificationButtonState();
+    console.log('Başlangıç Bildirim İzni Durumu:', notificationPermission);
+
+    // UI durumu loadSettings sonundaki updateUI çağrısı ile ayarlanacak
+    // updateNotificationSettingsUIState(); // Bu çağrıyı kaldırıyoruz
+    return true; // Destek var
 }
 
-// Bildirim izin butonu durumunu ve ayar alanını güncelle
-function updateNotificationButtonState() {
-    if (!notificationPermissionButton || !notificationMagnitudeInput || !enableNotificationsCheckbox || !enableDistanceNotificationCheckbox) return;
+// Bildirim ayarları UI elemanlarının aktif/pasif durumunu güncelleyen fonksiyon
+function updateNotificationSettingsUIState() {
+    const isDenied = notificationPermission === 'denied';
+    const isUnsupported = !('Notification' in window);
+    // DÜZELTİLMİŞ: Bildirimler sadece izin VERİLMİŞSE, KULLANICI ETKİNLEŞTİRMİŞSE ve DESTEKLENİYORSA etkindir.
+    const areNotificationsEffectivelyEnabled = notificationPermission === 'granted' && notificationsEnabled && !isUnsupported;
 
-    const settingsDisabled = (notificationPermission !== 'granted' || !notificationsEnabled);
-    notificationMagnitudeInput.disabled = settingsDisabled;
-    // enableNotificationsCheckbox.disabled = (notificationPermission !== 'granted'); // İzin yoksa etkinleştirmeyi de kapatabiliriz
+    // Ana Bildirim Butonu
+    if (toggleNotificationsBtn) {
+        toggleNotificationsBtn.disabled = isDenied || isUnsupported; // Reddedilmiş veya desteklenmiyorsa devre dışı
 
-    if (notificationPermission !== 'granted') {
-        // İzin yoksa veya engellenmişse
-        notificationPermissionButton.disabled = (notificationPermission === 'denied'); // Engellenmişse butonu tamamen disable et
-        notificationPermissionButton.textContent = (notificationPermission === 'denied') ? 'Bildirimler Engellendi' : 'Bildirimlere İzin Ver';
-         enableNotificationsCheckbox.checked = false; // İzin yoksa etkinleştirme kutusunu kapat
-         notificationsEnabled = false; // State'i de güncelle
-         notificationMagnitudeInput.disabled = true; // Ayarı da disable et
-         saveNotificationSettings(); // Durumu kaydet
-    } else {
-        // İzin verilmişse
-        notificationPermissionButton.textContent = 'Bildirimlere İzin Verildi';
-        notificationPermissionButton.disabled = true;
-        // Checkbox ve range input'un durumu sadece notificationsEnabled'a bağlı
-        enableNotificationsCheckbox.disabled = false;
-        notificationMagnitudeInput.disabled = !notificationsEnabled;
+        if (areNotificationsEffectivelyEnabled) {
+            toggleNotificationsBtn.classList.add('active'); // Sadece etkinse aktif yap
+        } else {
+            toggleNotificationsBtn.classList.remove('active'); // Diğer tüm durumlarda pasif yap
+            // Reddedilmiş veya desteklenmiyorsa, ayarı da kapalı tut
+            if (isDenied || isUnsupported) {
+                notificationsEnabled = false;
+            }
+        }
+    }
+
+    // Büyüklük Slider
+    if (notificationMagnitudeInput) {
+        notificationMagnitudeInput.disabled = !areNotificationsEffectivelyEnabled;
+    }
+
+    // Yakındaki Bildirim Butonu
+    if (toggleNearbyOnlyBtn) {
+        toggleNearbyOnlyBtn.disabled = !areNotificationsEffectivelyEnabled; // Ana ayar etkin değilse devre dışı
+        if (!areNotificationsEffectivelyEnabled) {
+            toggleNearbyOnlyBtn.classList.remove('active'); // Ana ayar etkin değilse pasif yap
+            notificationDistanceEnabled = false; // Ayarı da kapat
+        } else {
+            // Ana ayar etkinse, kendi durumuna göre aktif/pasif yap
+            toggleNearbyOnlyBtn.classList.toggle('active', notificationDistanceEnabled);
+        }
+    }
+
+    // Mesafe Slider Div'i
+    // Sadece ana bildirimler ve yakındaki ayarı etkinse göster
+    const showDistanceSettings = areNotificationsEffectivelyEnabled && notificationDistanceEnabled;
+    if (notificationDistanceSettingDiv) {
+        notificationDistanceSettingDiv.style.display = showDistanceSettings ? 'flex' : 'none';
+    }
+
+    // Mesafe Slider
+    if (notificationDistanceInput) {
+        notificationDistanceInput.disabled = !showDistanceSettings; // Sadece gösteriliyorsa etkin
     }
 }
 
-// Bildirim izni isteme fonksiyonu
+// Bildirim izni isteme fonksiyonu (Promise döndürür: true=izin verildi, false=verilmedi/kapatıldı)
 async function requestNotificationPermission() {
-    if (!('Notification' in window)) return; // Destek yoksa çık
+    if (!('Notification' in window)) return false;
 
     try {
         const permissionResult = await Notification.requestPermission();
-        notificationPermission = permissionResult; // Global değişkeni güncelle
-        updateNotificationButtonState(); // Buton durumunu güncelle
+        notificationPermission = permissionResult; // Global durumu güncelle
 
         if (permissionResult === 'granted') {
             console.log('Bildirim izni verildi.');
+            notificationsEnabled = true; // Bildirimleri etkinleştir
             initialNotificationNeeded = true; // İlk bildirim bayrağını ayarla
-            // İzin verildikten sonra listeyi/veriyi yeniden işleterek
-            // initialNotificationNeeded kontrolünün displayEarthquakes'te yapılmasını sağla.
+            if (enableNotificationsCheckbox) {
+                enableNotificationsCheckbox.checked = true; // Toggle'ı AÇIK yap
+                enableNotificationsCheckbox.disabled = false; // Artık disable değil
+            }
+            updateNotificationSettingsUIState(); // Diğer UI'ları etkinleştir
+            saveSettings(); // Yeni durumu kaydet
+            // İlk bildirimi göndermek için veriyi yeniden işle
             filterAndDisplayData();
-            // İsteğe bağlı test bildirimi:
-            // showNotification('Bildirimler Etkin!', 'Yeni depremler artık bildirilecek.');
-        } else if (permissionResult === 'denied') {
-            console.log('Bildirim izni reddedildi.');
-            alert('Bildirimler engellendi. Tarayıcı ayarlarından izin vermeniz gerekebilir.');
+            return true; // Başarılı
         } else {
-            console.log('Bildirim izni isteği kapatıldı.');
+             console.log('Bildirim izni verilmedi veya istek kapatıldı.');
+             notificationsEnabled = false;
+             if (enableNotificationsCheckbox) {
+                 enableNotificationsCheckbox.checked = false; // Toggle'ı KAPALI bırak/yap
+                 enableNotificationsCheckbox.disabled = (permissionResult === 'denied'); // Reddedildiyse disable et
+             }
+             updateNotificationSettingsUIState(); // Diğer UI'ları devre dışı bırak
+             saveSettings(); // Yeni durumu kaydet
+            if (permissionResult === 'denied') {
+                 alert('Bildirimler engellendi. Tarayıcı ayarlarından izin vermeniz gerekebilir.');
+            }
+            return false; // Başarısız
         }
     } catch (error) {
         console.error('Bildirim izni istenirken hata:', error);
+        notificationsEnabled = false; // Hata durumunda kapat
+        if (enableNotificationsCheckbox) enableNotificationsCheckbox.checked = false;
+        updateNotificationSettingsUIState();
+        saveSettings();
+        return false; // Başarısız
     }
 }
 
 // Bildirim gösterme fonksiyonu
 function showNotification(title, body) {
-    if (notificationPermission !== 'granted' || !notificationsEnabled) return;
+    // İzin kontrolü zaten çağıran yerde yapılıyor ama burada da dursun
+    if (Notification.permission !== 'granted' || !notificationsEnabled) return;
 
-    new Notification(title, { body: body, icon: 'icons/icon-192x192.png' });
+    // Aktif service worker üzerinden bildirim göndermeyi dene (daha iyi çevrimdışı destek için)
+    if ('serviceWorker' in navigator && navigator.serviceWorker.ready) {
+        navigator.serviceWorker.ready.then(function(registration) {
+            registration.showNotification(title, {
+                body: body,
+                icon: 'icons/icon-192x192.png', // Manifest'teki ikon
+                badge: 'icons/icon-192x192.png' // Küçük ikon (Android)
+                // tag: 'deprem-bildirimi' // Aynı tag'li bildirimler birbirini günceller (isteğe bağlı)
+            });
+        });
+    } else {
+        // SW yoksa veya hazır değilse standart Notification API kullan
+        new Notification(title, { body: body, icon: 'icons/icon-192x192.png' });
+    }
 }
 
 // Service Worker Kaydı
@@ -1404,4 +1465,58 @@ function downloadDataAsJSON() {
     const jsonContent = JSON.stringify(jsonData, null, 2); // Güzelleştirilmiş JSON
     const timestamp = new Date().toISOString().slice(0, 10);
     triggerDownload(`depremler_${timestamp}.json`, jsonContent, 'application/json;charset=utf-8;');
-} 
+}
+
+// --- Yeni Buton Listener'ları ---
+if (toggleNotificationsBtn) {
+    toggleNotificationsBtn.addEventListener('click', async () => {
+        if (notificationPermission === 'denied') {
+            alert('Tarayıcı ayarlarından bildirim izinlerini değiştirmeniz gerekiyor.');
+            return;
+        }
+
+        notificationsEnabled = !notificationsEnabled;
+        // toggleNotificationsBtn.classList.toggle('active', notificationsEnabled); // -> Bu satır kaldırıldı, updateUI yönetecek
+
+        console.log(`Button Clicked: notificationsEnabled=${notificationsEnabled}, notificationPermission='${notificationPermission}'`);
+
+        if (notificationsEnabled && notificationPermission === 'default') {
+            console.log('İzin isteme koşulu sağlandı. requestNotificationPermission çağrılıyor...');
+            await requestNotificationPermission();
+        } else {
+            // Eğer izin zaten verilmişse veya kapatılıyorsa, sadece UI'ı ve ayarı güncelle
+            saveSettings();
+            updateNotificationSettingsUIState();
+        }
+    });
+}
+if (toggleNearbyOnlyBtn) {
+    toggleNearbyOnlyBtn.addEventListener('click', () => {
+        notificationDistanceEnabled = !notificationDistanceEnabled;
+        // toggleNearbyOnlyBtn.classList.toggle('active', notificationDistanceEnabled); // -> Bu satır kaldırıldı, updateUI yönetecek
+        saveSettings();
+        updateNotificationSettingsUIState(); // Mesafe slider'ını göster/gizle
+    });
+}
+if (notificationMagnitudeInput) {
+    notificationMagnitudeInput.addEventListener('input', (e) => {
+        minNotificationMagnitude = parseFloat(e.target.value);
+        if(notificationMagnitudeValueSpan) notificationMagnitudeValueSpan.textContent = minNotificationMagnitude.toFixed(1);
+        saveSettings();
+        // Yeniden filtrelemeye gerek yok, sadece bildirimleri etkiler
+    });
+}
+if (notificationDistanceInput) {
+    notificationDistanceInput.addEventListener('input', (e) => {
+        maxNotificationDistance = parseFloat(e.target.value);
+        if(notificationDistanceValueSpan) notificationDistanceValueSpan.textContent = maxNotificationDistance.toFixed(0);
+        saveSettings();
+        // Yeniden filtrelemeye gerek yok, sadece bildirimleri etkiler
+    });
+}
+// -------
+
+// 4. Arayüz Hazır Olduktan Sonra Konumu Al ve Veri Çek
+handleSortChange();
+toggleDatePickerVisibility();
+fetchEarthquakes(); 
