@@ -2,7 +2,7 @@
   "name": "Deprem Takip Uygulaması",
   "short_name": "DepremTakip",
   "description": "Türkiye ve çevresindeki son depremleri gösteren PWA.",
-  "start_url": "/index.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#ffffff",
